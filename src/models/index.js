@@ -56,6 +56,13 @@ Partner.hasMany(Favorite, { foreignKey: 'partnerId' });
 Favorite.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 Favorite.belongsTo(Partner, { foreignKey: 'partnerId', as: 'partner' });
 
+export async function connectDatabase({ sync = false, force = false, alter = false } = {}) {
+  await sequelize.authenticate();
+  if (sync) {
+    await sequelize.sync({ force, alter });
+  }
+}
+
 export async function syncDatabase({ force = false, alter = true } = {}) {
-  await sequelize.sync({ force, alter });
+  await connectDatabase({ sync: true, force, alter });
 }

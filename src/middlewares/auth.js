@@ -4,7 +4,7 @@ import { sendFail } from '../utils/apiResponse.js';
 function bearer(req) {
   const h = req.headers.authorization;
   if (!h?.startsWith('Bearer ')) return null;
-  return h.slice(7);
+  return h.slice(7).trim();
 }
 
 export function requireUser(req, res, next) {
@@ -12,6 +12,9 @@ export function requireUser(req, res, next) {
   if (!t) return sendFail(res, 'Authentication required', 401);
   try {
     const payload = verifyToken(t, 'user');
+    if (payload.role !== 'user') {
+      return sendFail(res, 'Invalid token for this resource', 403);
+    }
     req.userId = payload.sub;
     req.userPhone = payload.phone;
     next();
@@ -25,6 +28,9 @@ export function requirePartner(req, res, next) {
   if (!t) return sendFail(res, 'Authentication required', 401);
   try {
     const payload = verifyToken(t, 'partner');
+    if (payload.role !== 'partner') {
+      return sendFail(res, 'Invalid token for this resource', 403);
+    }
     req.partnerId = payload.sub;
     req.partnerPhone = payload.phone;
     next();
@@ -38,6 +44,9 @@ export function requireAdmin(req, res, next) {
   if (!t) return sendFail(res, 'Authentication required', 401);
   try {
     const payload = verifyToken(t, 'admin');
+    if (payload.role !== 'admin') {
+      return sendFail(res, 'Invalid token for this resource', 403);
+    }
     req.adminId = payload.sub;
     next();
   } catch {

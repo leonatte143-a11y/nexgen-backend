@@ -15,7 +15,7 @@ Backend derived from the **React Native** app’s service contracts in `../mobil
 1. Create MySQL database: `CREATE DATABASE nexgen;`
 2. `cd backend`
 3. `npm install`
-4. Copy `.env.example` to `.env` and set `DB_USER`, `DB_PASS` (or `DB_PASSWORD`), and JWT secrets.
+4. Copy `.env.example` to `.env` and set `DB_USER`, `DB_PASS` (or `DB_PASSWORD`), and JWT secrets. The server **refuses to start** unless every role can resolve a signing key: set `JWT_USER_SECRET`, `JWT_PARTNER_SECRET`, and `JWT_ADMIN_SECRET`, **or** set `JWT_SECRET` alone as a shared fallback for all roles.
 5. `npm run db:seed` — creates tables (alter), admin user, seed categories, partner, services, sample user & booking.
 6. `npm run dev` — default `http://0.0.0.0:4000` (reachable on LAN if `HOST=0.0.0.0`)
 

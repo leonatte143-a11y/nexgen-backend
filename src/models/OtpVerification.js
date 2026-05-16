@@ -17,7 +17,7 @@ export function defineOtpVerification(sequelize) {
       modelName: 'OtpVerification',
       tableName: 'otp_verifications',
       timestamps: true,
-      indexes: [{ fields: ['phone', 'createdAt'] }],
+      indexes: [{ fields: ['phone', 'created_at'] }],
     },
   );
   return OtpVerification;
