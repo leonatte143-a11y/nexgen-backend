@@ -1,11 +1,13 @@
 import { User } from '../models/index.js';
 import { sendOk, sendFail } from '../utils/apiResponse.js';
 import { toMockUser } from '../serializers/mappers.js';
+import { ctrlLog } from '../utils/devLogger.js';
 
 export async function getMe(req, res, next) {
   try {
     const user = await User.findByPk(req.userId);
     if (!user) return sendFail(res, 'User not found', 404);
+    ctrlLog('PROFILE', 'getMe', req);
     return sendOk(res, toMockUser(user));
   } catch (e) {
     next(e);
@@ -26,6 +28,7 @@ export async function updateMe(req, res, next) {
       ...(referralCode !== undefined && { referralCode }),
       ...(phone !== undefined && { phone: String(phone).replace(/\D/g, '').slice(0, 10) }),
     });
+    ctrlLog('PROFILE', 'Profile updated', req, { fields: Object.keys(req.body || {}) });
     return sendOk(res, toMockUser(user), 'Profile updated');
   } catch (e) {
     next(e);

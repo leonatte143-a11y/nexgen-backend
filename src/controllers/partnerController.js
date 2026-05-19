@@ -11,42 +11,95 @@ import {
   PARTNER_ARRIVAL_CANCELLATION_CREDIT,
   PARTNER_HEAVY_DECLINE_CREDIT,
 } from '../services/money.js';
+import { ctrlLog } from '../utils/devLogger.js';
 
 function recalcPartnerEarnings(p) {
   p.rewardPoints = p.rewardPoints || 0;
   return p;
 }
 
+function normalizePartnerPhone(raw) {
+  const phone = String(raw || '').replace(/\D/g, '').slice(0, 10);
+  return phone.length === 10 ? phone : null;
+}
+
+function partnerRegistrationFields(body) {
+  const categories = Array.isArray(body.categories)
+    ? body.categories.filter(Boolean)
+    : body.serviceCategory
+      ? [String(body.serviceCategory)]
+      : [];
+  const primaryCity =
+    body.primaryCity ||
+    body.workLocation ||
+    (Array.isArray(body.categories) ? body.categories.find((c) => typeof c === 'string' && c.length > 2) : null) ||
+    undefined;
+  return {
+    name: body.name?.trim() || 'Partner',
+    skills: Array.isArray(body.skills) ? body.skills : [],
+    categories,
+    primaryCity: primaryCity || 'Rajahmundry',
+    bankName: body.bankName || '',
+    bankAccount: body.bankAccount || '',
+    trainingProgress:
+      body.trainingProgress != null ? Math.max(0, Math.min(100, Number(body.trainingProgress) || 0)) : undefined,
+    verificationStatus: body.verificationStatus || 'Pending',
+  };
+}
+
+/**
+ * Shared partner create/update for onboarding and auth register routes.
+ * @param {{ allowUpdate?: boolean }} opts — when false, existing phone returns 409
+ */
+export async function upsertPartnerRegistration(body, { allowUpdate = true } = {}) {
+  const phone = normalizePartnerPhone(body.phone);
+  if (!phone) {
+    const err = new Error('Valid 10-digit phone required');
+    err.status = 400;
+    throw err;
+  }
+  const id = `partner_${phone}`;
+  const fields = partnerRegistrationFields(body);
+  const existing = await Partner.findOne({ where: { phone } });
+  if (existing && !allowUpdate) {
+    const err = new Error('This number is already registered. Use partner login.');
+    err.status = 409;
+    throw err;
+  }
+  if (!existing) {
+    const p = await Partner.create({
+      id,
+      phone,
+      ...fields,
+      verificationStatus: fields.verificationStatus || 'Pending',
+    });
+    return { partner: p, created: true };
+  }
+  const upd = {
+    name: fields.name || existing.name,
+    skills: fields.skills.length ? fields.skills : existing.skills,
+    categories: fields.categories.length ? fields.categories : existing.categories,
+    bankName: fields.bankName || existing.bankName,
+    bankAccount: fields.bankAccount || existing.bankAccount,
+    primaryCity: fields.primaryCity || existing.primaryCity,
+  };
+  if (fields.trainingProgress != null) upd.trainingProgress = fields.trainingProgress;
+  await existing.update(upd);
+  await existing.reload();
+  return { partner: existing, created: false };
+}
+
 export async function applyOnboarding(req, res, next) {
   try {
-    const body = req.body;
-    const phone = String(body.phone || '').replace(/\D/g, '').slice(0, 10);
-    if (phone.length !== 10) return sendFail(res, 'Valid 10-digit phone required', 400);
-    const id = `partner_${phone}`;
-    const [p, created] = await Partner.findOrCreate({
-      where: { phone },
-      defaults: {
-        id,
-        phone,
-        name: body.name || 'Partner',
-        skills: body.skills || [],
-        categories: body.categories || [],
-        bankName: body.bankName || '',
-        bankAccount: body.bankAccount || '',
-        verificationStatus: 'Pending',
-      },
+    const { partner, created } = await upsertPartnerRegistration(req.body, { allowUpdate: true });
+    ctrlLog('PARTNER', 'applyOnboarding', req, {
+      partnerId: partner.id,
+      created,
+      phoneLast4: partner.phone.slice(-4),
     });
-    if (!created) {
-      await p.update({
-        name: body.name || p.name,
-        skills: body.skills || p.skills,
-        categories: body.categories || p.categories,
-        bankName: body.bankName ?? p.bankName,
-        bankAccount: body.bankAccount ?? p.bankAccount,
-      });
-    }
-    return sendOk(res, toPartnerProfile(p), 'Onboarding saved');
+    return sendOk(res, toPartnerProfile(partner), created ? 'Partner registered' : 'Onboarding updated');
   } catch (e) {
+    if (e.status && e.message) return sendFail(res, e.message, e.status);
     next(e);
   }
 }
@@ -55,6 +108,7 @@ export async function getProfile(req, res, next) {
   try {
     const p = await Partner.findByPk(req.partnerId);
     if (!p) return sendFail(res, 'Partner not found', 404);
+    ctrlLog('PARTNER', 'getProfile', req);
     return sendOk(res, toPartnerProfile(p));
   } catch (e) {
     next(e);
@@ -67,6 +121,7 @@ export async function getRequests(req, res, next) {
       where: { partnerId: req.partnerId },
       order: [['createdAt', 'DESC']],
     });
+    ctrlLog('PARTNER', 'getRequests', req, { count: rows.length });
     return sendOk(
       res,
       rows.map((b) => {
@@ -86,6 +141,7 @@ export async function getEarnings(req, res, next) {
   try {
     const p = recalcPartnerEarnings(await Partner.findByPk(req.partnerId));
     if (!p) return sendFail(res, 'Partner not found', 404);
+    ctrlLog('PARTNER', 'getEarnings', req);
     return sendOk(res, toEarningsSummary(p));
   } catch (e) {
     next(e);
@@ -98,6 +154,7 @@ export async function toggleOnline(req, res, next) {
     const p = await Partner.findByPk(req.partnerId);
     if (!p) return sendFail(res, 'Partner not found', 404);
     await p.update({ isOnline: Boolean(online) });
+    await p.reload();
     return sendOk(res, toPartnerProfile(p));
   } catch (e) {
     next(e);
@@ -278,6 +335,7 @@ export async function updateProfile(req, res, next) {
       if (req.body[k] !== undefined) upd[k] = req.body[k];
     }
     await p.update(upd);
+    await p.reload();
     return sendOk(res, toPartnerProfile(p));
   } catch (e) {
     next(e);

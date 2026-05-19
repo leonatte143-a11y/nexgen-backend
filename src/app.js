@@ -4,12 +4,19 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import { api } from './routes/index.js';
 import { errorHandler } from './middlewares/errorHandler.js';
+import { requestTraceMiddleware } from './middlewares/requestTrace.js';
+import { isDevLoggingEnabled } from './utils/devLogger.js';
 
 const app = express();
 app.use(helmet());
-// Mobile dev (Expo) — allow LAN devices to call API.
 app.use(cors({ origin: '*', credentials: false }));
-app.use(morgan('dev'));
+
+if (isDevLoggingEnabled()) {
+  app.use(requestTraceMiddleware);
+} else {
+  app.use(morgan('combined'));
+}
+
 app.use(express.json({ limit: '1mb' }));
 
 app.get('/health', (req, res) => {
