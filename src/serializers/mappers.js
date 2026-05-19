@@ -104,6 +104,19 @@ export function toPartnerRequest(b) {
   };
 }
 
+function jsonStringArray(val) {
+  if (Array.isArray(val)) return val;
+  if (typeof val === 'string') {
+    try {
+      const parsed = JSON.parse(val);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return val ? [val] : [];
+    }
+  }
+  return [];
+}
+
 export function toPartnerProfile(p) {
   return {
     id: p.id,
@@ -113,8 +126,8 @@ export function toPartnerProfile(p) {
     rating: toNum(p.rating),
     jobsCompleted: p.jobsCompleted,
     isOnline: p.isOnline,
-    skills: p.skills || [],
-    categories: p.categories || [],
+    skills: jsonStringArray(p.skills),
+    categories: jsonStringArray(p.categories),
     walletBalance: toNum(p.walletBalance),
     todayEarnings: toNum(p.todayEarnings),
     lifetimeEarnings: toNum(p.lifetimeEarnings),

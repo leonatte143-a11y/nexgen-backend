@@ -3,6 +3,7 @@ import { User, Service, Partner, Booking, Review } from '../models/index.js';
 import { sendOk, sendFail } from '../utils/apiResponse.js';
 import { toUserBooking } from '../serializers/mappers.js';
 import { computeBill, CANCELLATION_FEE_USER, DEFAULT_VISITING_FEE } from '../services/money.js';
+import { ctrlLog } from '../utils/devLogger.js';
 
 function genOtp() {
   return String(randomInt(1000, 10000));
@@ -96,6 +97,7 @@ export async function createBooking(req, res, next) {
       requestedAtLabel: 'Just now',
     });
 
+    ctrlLog('BOOKING', 'Booking created', req, { bookingId: b.id, serviceId, totalAmount });
     return sendOk(res, toUserBooking(b), 'Booking created');
   } catch (e) {
     next(e);

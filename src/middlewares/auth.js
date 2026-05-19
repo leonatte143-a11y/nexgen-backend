@@ -1,5 +1,6 @@
 import { verifyToken } from '../utils/jwt.js';
 import { sendFail } from '../utils/apiResponse.js';
+import { devLog, isDevLoggingEnabled } from '../utils/devLogger.js';
 
 function bearer(req) {
   const h = req.headers.authorization;
@@ -19,6 +20,9 @@ export function requireUser(req, res, next) {
     req.userPhone = payload.phone;
     next();
   } catch {
+    if (isDevLoggingEnabled()) {
+      devLog('AUTH', 'User token rejected', { requestId: req.requestId, route: req.originalUrl });
+    }
     return sendFail(res, 'Invalid or expired token', 401);
   }
 }
@@ -35,6 +39,9 @@ export function requirePartner(req, res, next) {
     req.partnerPhone = payload.phone;
     next();
   } catch {
+    if (isDevLoggingEnabled()) {
+      devLog('AUTH', 'Partner token rejected', { requestId: req.requestId, route: req.originalUrl });
+    }
     return sendFail(res, 'Invalid or expired token', 401);
   }
 }

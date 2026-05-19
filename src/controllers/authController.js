@@ -3,7 +3,9 @@ import { User, AdminUser, Partner } from '../models/index.js';
 import { issueOtp, verifyOtpRecord, getOtpDigitLength } from '../services/otpService.js';
 import { signToken } from '../utils/jwt.js';
 import { sendOk, sendFail } from '../utils/apiResponse.js';
-import { toMockUser } from '../serializers/mappers.js';
+import { toMockUser, toPartnerProfile } from '../serializers/mappers.js';
+import { upsertPartnerRegistration } from './partnerController.js';
+import { ctrlLog } from '../utils/devLogger.js';
 
 function normalizePhone(phone) {
   const d = String(phone || '').replace(/\D/g, '');
@@ -21,8 +23,8 @@ export async function requestOtp(req, res, next) {
       return sendFail(res, 'Enter a valid 10-digit number.', 400);
     }
     const { plain, expiresAt } = await issueOtp(phone);
-    console.log('plain---', plain);
     const ttlSec = Math.max(1, Math.round((expiresAt.getTime() - Date.now()) / 1000));
+    ctrlLog('AUTH', 'OTP requested', req, { phoneLast4: phone.slice(-4), ttlSec });
     const otpLength = getOtpDigitLength();
     const data = { ok: true, expiresInSec: ttlSec, otpLength };
     if (process.env.OTP_DEBUG_RESPONSE === 'true') {
@@ -58,6 +60,7 @@ export async function verifyOtpUser(req, res, next) {
     }
     const v = await verifyOtpRecord(phone, otp);
     if (!v.ok) {
+      ctrlLog('AUTH', 'OTP verify failed', req, { reason: v.reason, phoneLast4: phone.slice(-4) });
       return res.status(200).json({
         success: true,
         data: {
@@ -84,6 +87,7 @@ export async function verifyOtpUser(req, res, next) {
       },
     });
     const token = signToken({ sub: user.id, phone }, 'user');
+    ctrlLog('AUTH', 'OTP verified — user logged in', req, { userId: user.id, phoneLast4: phone.slice(-4) });
     return res.json({
       success: true,
       data: {
@@ -131,19 +135,47 @@ export async function partnerLogin(req, res, next) {
     }
     const partner = await Partner.findOne({ where: { phone } });
     if (!partner) {
+      ctrlLog('AUTH', 'Partner login — no account', req, { phoneLast4: phone.slice(-4) });
       return res.json({
         success: true,
-        data: { ok: false, message: 'No partner account for this number.' },
+        data: {
+          ok: false,
+          message: 'No partner account for this number. Complete partner registration first.',
+        },
         message: '',
       });
     }
     const token = signToken({ sub: partner.id, phone }, 'partner');
+    ctrlLog('AUTH', 'Partner logged in', req, { partnerId: partner.id, phoneLast4: phone.slice(-4) });
     return res.json({
       success: true,
-      data: { ok: true, token, message: 'Logged in.' },
+      data: {
+        ok: true,
+        token,
+        message: 'Logged in.',
+        partner: toPartnerProfile(partner),
+      },
       message: '',
     });
   } catch (e) {
+    next(e);
+  }
+}
+
+/**
+ * Mobile: authService.registerPartner — new partner only (409 if phone exists)
+ */
+export async function registerPartner(req, res, next) {
+  try {
+    const { partner, created } = await upsertPartnerRegistration(req.body, { allowUpdate: false });
+    ctrlLog('AUTH', 'Partner registered', req, {
+      partnerId: partner.id,
+      created,
+      phoneLast4: partner.phone.slice(-4),
+    });
+    return sendOk(res, { partner: toPartnerProfile(partner), created }, 'Partner registered');
+  } catch (e) {
+    if (e.status && e.message) return sendFail(res, e.message, e.status);
     next(e);
   }
 }
