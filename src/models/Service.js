@@ -15,6 +15,7 @@ export function defineService(sequelize) {
       reviewsCount: { type: DataTypes.INTEGER, defaultValue: 0 },
       description: DataTypes.TEXT,
       distanceKm: { type: DataTypes.DECIMAL(6, 2), defaultValue: 0 },
+      commissionPercent: { type: DataTypes.DECIMAL(5, 2), defaultValue: 10 },
     },
     { sequelize, modelName: 'Service', tableName: 'services', timestamps: true },
   );

@@ -41,7 +41,7 @@ export function defineBooking(sequelize) {
       /** Display label for "requested at" in partner list */
       requestedAtLabel: DataTypes.STRING(64),
     },
-    { sequelize, modelName: 'Booking', tableName: 'bookings' },
+    { sequelize, modelName: 'Booking', tableName: 'bookings', timestamps: true },
   );
   return Booking;
 }

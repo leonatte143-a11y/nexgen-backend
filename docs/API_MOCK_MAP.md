@@ -19,6 +19,13 @@ React Native file → Backend endpoint (all under prefix `/api/v1`).
 | `getProfile()` | `GET /users/me` (Bearer user) |
 | `updateProfile(partial)` | `PUT /users/me` (Bearer user) |
 
+## `src/services/bannerService.ts`
+
+| Method | API |
+|--------|-----|
+| `getHomeBanners(city?)` | `GET /banners/home?city=` (active, in-date, city-targeted, by priority) |
+| (admin) create/update/delete | `POST/PUT/DELETE /admin/banners` (Bearer admin) |
+
 ## `src/services/catalogService.ts`
 
 | Method | API |

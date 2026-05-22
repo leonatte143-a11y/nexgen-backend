@@ -12,6 +12,7 @@ export function defineUser(sequelize) {
       address: DataTypes.TEXT,
       rewardPoints: { type: DataTypes.INTEGER, defaultValue: 0 },
       referralCode: DataTypes.STRING(32),
+      isBlocked: { type: DataTypes.BOOLEAN, defaultValue: false },
     },
     { sequelize, modelName: 'User', tableName: 'users', timestamps: true },
   );

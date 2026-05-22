@@ -14,6 +14,16 @@ import { defineTestimonial } from './Testimonial.js';
 import { defineAcademyVideo } from './AcademyVideo.js';
 import { defineFavorite } from './Favorite.js';
 import { defineOtpVerification } from './OtpVerification.js';
+import { defineAdvertisementBanner } from './AdvertisementBanner.js';
+import { defineSearchLog } from './SearchLog.js';
+import { definePartnerDocument } from './PartnerDocument.js';
+import { defineSupportTicket } from './SupportTicket.js';
+import { defineCoupon } from './Coupon.js';
+import { defineSettlement } from './Settlement.js';
+import { definePayoutQueue } from './PayoutQueue.js';
+import { defineAppSetting } from './AppSetting.js';
+import { defineAdminAuditLog } from './AdminAuditLog.js';
+import { defineGeoZone } from './GeoZone.js';
 
 export const User = defineUser(sequelize);
 export const Partner = definePartner(sequelize);
@@ -28,12 +38,24 @@ export const Testimonial = defineTestimonial(sequelize);
 export const AcademyVideo = defineAcademyVideo(sequelize);
 export const Favorite = defineFavorite(sequelize);
 export const OtpVerification = defineOtpVerification(sequelize);
+export const AdvertisementBanner = defineAdvertisementBanner(sequelize);
+export const SearchLog = defineSearchLog(sequelize);
+export const PartnerDocument = definePartnerDocument(sequelize);
+export const SupportTicket = defineSupportTicket(sequelize);
+export const Coupon = defineCoupon(sequelize);
+export const Settlement = defineSettlement(sequelize);
+export const PayoutQueue = definePayoutQueue(sequelize);
+export const AppSetting = defineAppSetting(sequelize);
+export const AdminAuditLog = defineAdminAuditLog(sequelize);
+export const GeoZone = defineGeoZone(sequelize);
 
 Service.belongsTo(Category, { foreignKey: 'categoryId', as: 'category' });
 Service.belongsTo(Partner, { foreignKey: 'partnerId', as: 'partner' });
 
 Category.hasMany(Service, { foreignKey: 'categoryId', as: 'services' });
 Partner.hasMany(Service, { foreignKey: 'partnerId', as: 'services' });
+Partner.hasMany(PartnerDocument, { foreignKey: 'partnerId', as: 'documents' });
+PartnerDocument.belongsTo(Partner, { foreignKey: 'partnerId', as: 'partner' });
 
 User.hasMany(Booking, { foreignKey: 'userId' });
 Partner.hasMany(Booking, { foreignKey: 'partnerId' });
@@ -45,7 +67,6 @@ Partner.hasMany(PartnerServicePricing, { foreignKey: 'partnerId' });
 User.hasMany(Notification, { foreignKey: 'userId' });
 Review.belongsTo(Booking, { foreignKey: 'bookingId' });
 
-// Social proof / favorites
 User.hasMany(Testimonial, { foreignKey: 'userId' });
 Partner.hasMany(Testimonial, { foreignKey: 'partnerId' });
 Testimonial.belongsTo(User, { foreignKey: 'userId', as: 'user' });

@@ -1,0 +1,117 @@
+-- Admin panel extensions (safe additive migrations)
+
+ALTER TABLE users ADD COLUMN IF NOT EXISTS is_blocked TINYINT(1) NOT NULL DEFAULT 0;
+
+ALTER TABLE services ADD COLUMN IF NOT EXISTS commission_percent DECIMAL(5,2) NOT NULL DEFAULT 10.00;
+
+ALTER TABLE admin_users ADD COLUMN IF NOT EXISTS name VARCHAR(128) NULL;
+ALTER TABLE admin_users ADD COLUMN IF NOT EXISTS role VARCHAR(32) NOT NULL DEFAULT 'super_admin';
+
+CREATE TABLE IF NOT EXISTS search_logs (
+  id VARCHAR(64) PRIMARY KEY,
+  query VARCHAR(256) NOT NULL,
+  city VARCHAR(128) NULL,
+  results_count INT NOT NULL DEFAULT 0,
+  lat DECIMAL(10,7) NULL,
+  lng DECIMAL(10,7) NULL,
+  user_id VARCHAR(64) NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_search_logs_query (query),
+  INDEX idx_search_logs_created (created_at)
+);
+
+CREATE TABLE IF NOT EXISTS partner_documents (
+  id VARCHAR(64) PRIMARY KEY,
+  partner_id VARCHAR(64) NOT NULL,
+  doc_type VARCHAR(32) NOT NULL,
+  file_url VARCHAR(512) NOT NULL,
+  status VARCHAR(32) NOT NULL DEFAULT 'pending',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_partner_documents_partner (partner_id)
+);
+
+CREATE TABLE IF NOT EXISTS support_tickets (
+  id VARCHAR(64) PRIMARY KEY,
+  booking_id VARCHAR(64) NULL,
+  user_id VARCHAR(64) NULL,
+  partner_id VARCHAR(64) NULL,
+  subject VARCHAR(256) NOT NULL,
+  description TEXT NULL,
+  status VARCHAR(32) NOT NULL DEFAULT 'open',
+  priority VARCHAR(16) NOT NULL DEFAULT 'normal',
+  payment_frozen TINYINT(1) NOT NULL DEFAULT 0,
+  chat_transcript JSON NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_support_tickets_status (status)
+);
+
+CREATE TABLE IF NOT EXISTS coupons (
+  id VARCHAR(64) PRIMARY KEY,
+  code VARCHAR(32) NOT NULL UNIQUE,
+  discount_type VARCHAR(16) NOT NULL DEFAULT 'flat',
+  discount_value DECIMAL(10,2) NOT NULL,
+  min_order_amount DECIMAL(10,2) NULL,
+  max_uses INT NULL,
+  used_count INT NOT NULL DEFAULT 0,
+  city VARCHAR(128) NULL,
+  active TINYINT(1) NOT NULL DEFAULT 1,
+  expires_at DATETIME NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS settlements (
+  id VARCHAR(64) PRIMARY KEY,
+  partner_id VARCHAR(64) NOT NULL,
+  amount DECIMAL(12,2) NOT NULL,
+  commission_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+  status VARCHAR(32) NOT NULL DEFAULT 'pending',
+  period_start DATE NULL,
+  period_end DATE NULL,
+  bank_reference VARCHAR(128) NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_settlements_partner (partner_id)
+);
+
+CREATE TABLE IF NOT EXISTS payout_queue (
+  id VARCHAR(64) PRIMARY KEY,
+  partner_id VARCHAR(64) NOT NULL,
+  amount DECIMAL(12,2) NOT NULL,
+  bank_name VARCHAR(256) NULL,
+  bank_account VARCHAR(64) NULL,
+  status VARCHAR(32) NOT NULL DEFAULT 'queued',
+  week_label VARCHAR(32) NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_payout_queue_status (status)
+);
+
+CREATE TABLE IF NOT EXISTS app_settings (
+  id VARCHAR(64) PRIMARY KEY,
+  setting_key VARCHAR(64) NOT NULL UNIQUE,
+  setting_value JSON NOT NULL,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS admin_audit_logs (
+  id VARCHAR(64) PRIMARY KEY,
+  admin_id VARCHAR(64) NOT NULL,
+  action VARCHAR(128) NOT NULL,
+  entity_type VARCHAR(64) NULL,
+  entity_id VARCHAR(64) NULL,
+  meta JSON NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_audit_admin (admin_id)
+);
+
+CREATE TABLE IF NOT EXISTS geo_zones (
+  id VARCHAR(64) PRIMARY KEY,
+  name VARCHAR(128) NOT NULL,
+  city VARCHAR(128) NOT NULL,
+  polygon JSON NULL,
+  surge_fee DECIMAL(10,2) NOT NULL DEFAULT 0,
+  active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);

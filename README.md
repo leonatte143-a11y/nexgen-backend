@@ -95,6 +95,27 @@ backend/src
   scripts/seed.js
 ```
 
+## Admin API (web panel)
+
+Login: `POST /api/v1/auth/admin/login` `{ "email", "password" }`  
+All routes below require `Authorization: Bearer <admin_jwt>`.
+
+| Area | Endpoints |
+|------|-----------|
+| Dashboard | `GET /admin/dashboard/stats`, `bookings-chart`, `recent-activity`, `search-analytics`, `heatmap` |
+| KYC | `GET /admin/partners/kyc/pending`, `POST .../approve`, `.../reject` |
+| Pricing | `GET/PUT /admin/services/:id`, `GET/PUT /admin/categories/:id` |
+| Bookings | `GET /admin/bookings`, `GET /admin/bookings/live`, `PUT /admin/bookings/:id/assign` |
+| Support | `GET/POST /admin/support/tickets`, freeze/refund actions |
+| Payouts | `GET /admin/payouts/queue`, `POST /admin/payouts/generate`, history & commission report |
+| Marketing | `GET/POST /admin/coupons` |
+| Users | `GET /admin/users`, `PUT /admin/users/:id/block` |
+| Geo | `GET /admin/geo/zones`, `POST /admin/geo/surge` |
+| Settings | `GET/PUT /admin/settings` |
+
+After pulling admin changes, run `npm run db:seed` once (uses `alter: false` + safe column adds).  
+Admin web app: `../admin-web/README.md`.
+
 ## Production notes
 
 - Replace in-memory OTP with SMS + short-lived codes (Redis).

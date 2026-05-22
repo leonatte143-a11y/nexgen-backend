@@ -227,8 +227,20 @@ export async function adminLogin(req, res, next) {
     if (!admin || !bcrypt.compareSync(password, admin.passwordHash)) {
       return sendFail(res, 'Invalid credentials', 401);
     }
-    const token = signToken({ sub: admin.id, email: admin.email }, 'admin');
-    return sendOk(res, { token }, 'ok');
+    const token = signToken({ sub: admin.id, email: admin.email, role: admin.role }, 'admin');
+    return sendOk(
+      res,
+      {
+        token,
+        admin: {
+          id: admin.id,
+          email: admin.email,
+          name: admin.name || 'NEXGEN Admin',
+          role: admin.role || 'super_admin',
+        },
+      },
+      'ok',
+    );
   } catch (e) {
     next(e);
   }
