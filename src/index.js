@@ -15,12 +15,19 @@ async function main() {
   console.log('[NEXGEN] Railway database detected =', databaseConfig.isRailway);
   console.log('[NEXGEN] Database host =', databaseConfig.host);
   console.log('[NEXGEN] Database name =', databaseConfig.database);
+  console.log('[NEXGEN] MYSQLHOST exists =', databaseConfig.mysqlHostExists);
   const jwtreport = jwtSecretsReport();
   console.log('[NEXGEN] JWT secrets present:', jwtreport);
   /* eslint-enable no-console */
 
   // Validate JWT secrets; this will produce friendly messages tailored to local vs hosted
   assertJwtSecretsConfigured();
+
+  if (databaseConfig.isRailway && !databaseConfig.hasRailwayMysqlConfig) {
+    console.error('[NEXGEN] Railway MySQL plugin is not configured or required MYSQL* vars are missing.');
+    console.error('[NEXGEN] Add Railway MySQL plugin or set MYSQLHOST/MYSQLDATABASE/MYSQLUSER/MYSQLPASSWORD.');
+    process.exit(1);
+  }
 
   const shouldSync = process.env.DB_SYNC === 'true';
   if (shouldSync) {
@@ -33,10 +40,12 @@ async function main() {
       await connectDatabase();
       console.log('[NEXGEN] Database connected');
     } catch (e) {
-      // Do not crash the server for simple DB connectivity issues in local dev.
-      // Log details so deployments can surface the problem without losing the
-      // HTTP server (useful for running in environments where DB is optional).
+      const isRailway = process.env.NEXGEN_RAILWAY === 'true';
       console.error('[NEXGEN] Database connection failed:', e.message || e);
+      if (isRailway) {
+        console.error('[NEXGEN] Railway production requires a working database connection.');
+        process.exit(1);
+      }
       console.error('[NEXGEN] Continuing startup without DB connection.');
     }
   }
