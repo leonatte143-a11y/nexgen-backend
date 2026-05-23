@@ -27,7 +27,7 @@ export async function requestOtp(req, res, next) {
     ctrlLog('AUTH', 'OTP requested', req, { phoneLast4: phone.slice(-4), ttlSec });
     const otpLength = getOtpDigitLength();
     const data = { ok: true, expiresInSec: ttlSec, otpLength };
-    if (process.env.OTP_DEBUG_RESPONSE === 'true') {
+    if (process.env.NODE_ENV !== 'production' && process.env.OTP_DEBUG_RESPONSE === 'true') {
       data.debugOtp = plain;
     }
     if (process.env.NODE_ENV !== 'production' && process.env.OTP_DEBUG_RESPONSE === 'true') {
@@ -86,6 +86,14 @@ export async function verifyOtpUser(req, res, next) {
         referralCode: 'NEXGEN2026',
       },
     });
+    if (user.isBlocked) {
+      ctrlLog('AUTH', 'OTP verify blocked user', req, { userId: user.id, phoneLast4: phone.slice(-4) });
+      return res.status(200).json({
+        success: true,
+        data: { ok: false, message: 'This account is blocked. Contact NEXGEN support.' },
+        message: '',
+      });
+    }
     const token = signToken({ sub: user.id, phone }, 'user');
     ctrlLog('AUTH', 'OTP verified — user logged in', req, { userId: user.id, phoneLast4: phone.slice(-4) });
     return res.json({

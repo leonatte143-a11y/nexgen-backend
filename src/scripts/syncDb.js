@@ -1,4 +1,4 @@
-import 'dotenv/config';
+import '../loadEnv.js';
 import { syncDatabase } from '../models/index.js';
 
 syncDatabase({ alter: true })
