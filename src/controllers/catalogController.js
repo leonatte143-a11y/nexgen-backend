@@ -1,6 +1,7 @@
 import { Category, Service, Partner } from '../models/index.js';
 import { sendOk } from '../utils/apiResponse.js';
 import { toCatalogService, toServiceBucket } from '../serializers/mappers.js';
+import { logSearch } from '../services/searchLogService.js';
 
 export async function getBuckets(req, res, next) {
   try {
@@ -63,6 +64,14 @@ export async function search(req, res, next) {
             s.categoryLabel.toLowerCase().includes(q) ||
             (s.subtext && s.subtext.toLowerCase().includes(q)),
         );
+    if (q) {
+      logSearch({
+        query: q,
+        resultsCount: filtered.length,
+        city: req.query.city,
+        userId: req.userId,
+      }).catch(() => {});
+    }
     return sendOk(res, filtered.map(toCatalogService));
   } catch (e) {
     next(e);
