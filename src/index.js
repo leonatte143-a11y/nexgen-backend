@@ -2,6 +2,7 @@ import './loadEnv.js';
 import { assertJwtSecretsConfigured, jwtSecretsReport } from './utils/jwt.js';
 import app from './app.js';
 import { connectDatabase, syncDatabase } from './models/index.js';
+import { databaseConfig } from './config/database.js';
 
 const port = parseInt(process.env.PORT || '4000', 10);
 const host = process.env.HOST || '0.0.0.0';
@@ -11,7 +12,9 @@ async function main() {
   /* eslint-disable no-console */
   console.log('[NEXGEN] Starting up');
   console.log('[NEXGEN] NODE_ENV =', process.env.NODE_ENV || 'undefined');
-  console.log('[NEXGEN] Running on Railway =', process.env.NEXGEN_RAILWAY === 'true');
+  console.log('[NEXGEN] Railway database detected =', databaseConfig.isRailway);
+  console.log('[NEXGEN] Database host =', databaseConfig.host);
+  console.log('[NEXGEN] Database name =', databaseConfig.database);
   const jwtreport = jwtSecretsReport();
   console.log('[NEXGEN] JWT secrets present:', jwtreport);
   /* eslint-enable no-console */
