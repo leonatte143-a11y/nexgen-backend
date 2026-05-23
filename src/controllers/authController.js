@@ -27,9 +27,9 @@ export async function requestOtp(req, res, next) {
     ctrlLog('AUTH', 'OTP requested', req, { phoneLast4: phone.slice(-4), ttlSec });
     const otpLength = getOtpDigitLength();
     const data = { ok: true, expiresInSec: ttlSec, otpLength };
-    if (process.env.NODE_ENV !== 'production' && process.env.OTP_DEBUG_RESPONSE === 'true') {
+    // if (process.env.NODE_ENV !== 'production' && process.env.OTP_DEBUG_RESPONSE === 'true') {
       data.debugOtp = plain;
-    }
+    // }
     if (process.env.NODE_ENV !== 'production' && process.env.OTP_DEBUG_RESPONSE === 'true') {
       // eslint-disable-next-line no-console
       console.info(`[otp-debug] ${phone} OTP=${plain} (disable OTP_DEBUG_RESPONSE in production)`);
