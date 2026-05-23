@@ -12,9 +12,10 @@ async function main() {
   /* eslint-disable no-console */
   console.log('[NEXGEN] Starting up');
   console.log('[NEXGEN] NODE_ENV =', process.env.NODE_ENV || 'undefined');
-  console.log('[NEXGEN] Railway database detected =', databaseConfig.isRailway);
-  console.log('[NEXGEN] Database host =', databaseConfig.host);
-  console.log('[NEXGEN] Database name =', databaseConfig.database);
+  console.log('[NEXGEN] Running on Railway =', process.env.NEXGEN_RAILWAY === 'true');
+  console.log('[NEXGEN] Database source =', databaseConfig.source);
+  console.log('[NEXGEN] Database host selected =', databaseConfig.host || '(none)');
+  console.log('[NEXGEN] Database name selected =', databaseConfig.database || '(none)');
   console.log('[NEXGEN] MYSQLHOST exists =', databaseConfig.mysqlHostExists);
   const jwtreport = jwtSecretsReport();
   console.log('[NEXGEN] JWT secrets present:', jwtreport);
