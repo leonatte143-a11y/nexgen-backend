@@ -19,6 +19,14 @@ Backend derived from the **React Native** app’s service contracts in `../mobil
 5. `npm run db:seed` — creates tables (alter), admin user, seed categories, partner, services, sample user & booking.
 6. `npm run dev` — default `http://0.0.0.0:4000` (reachable on LAN if `HOST=0.0.0.0`)
 
+## Railway MySQL setup
+
+1. In Railway, add a MySQL service from the project dashboard.
+2. Attach the MySQL service to this backend service so Railway injects runtime variables.
+3. Railway may expose env vars as `MYSQLHOST`, `MYSQLPORT`, `MYSQLDATABASE`, `MYSQLUSER`, `MYSQLPASSWORD`, or as the alternative names `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD`.
+4. The backend also accepts `DATABASE_URL` or `MYSQL_URL` when present.
+5. Redeploy the backend after attaching the database and confirm `DATABASE_URL` or `MYSQLHOST` is available.
+
 Health: `GET /health`  
 Base path: `/api/v1/...`
 

@@ -10,46 +10,103 @@ const isRailwayEnvironment = Boolean(
   process.env.RAILWAY_STATIC_URL,
 );
 
-const railwayDbHost = process.env.MYSQLHOST;
-const railwayDbPort = process.env.MYSQLPORT;
-const railwayDbName = process.env.MYSQLDATABASE;
-const railwayDbUser = process.env.MYSQLUSER;
-const railwayDbPassword = process.env.MYSQLPASSWORD;
+const railwayDbHost = process.env.MYSQLHOST || process.env.MYSQL_HOST;
+const railwayDbPort = process.env.MYSQLPORT || process.env.MYSQL_PORT;
+const railwayDbName = process.env.MYSQLDATABASE || process.env.MYSQL_DATABASE;
+const railwayDbUser = process.env.MYSQLUSER || process.env.MYSQL_USER;
+const railwayDbPassword = process.env.MYSQLPASSWORD || process.env.MYSQL_PASSWORD;
+const databaseUrl = process.env.DATABASE_URL || process.env.MYSQL_URL;
 
-if (isRailwayEnvironment) {
+const localDbHost = process.env.DB_HOST;
+const localDbPort = process.env.DB_PORT;
+const localDbName = process.env.DB_NAME;
+const localDbUser = process.env.DB_USER;
+const localDbPassword = process.env.DB_PASSWORD || process.env.DB_PASS;
+
+const hasRailwayVars = Boolean(
+  railwayDbHost ||
+  railwayDbPort ||
+  railwayDbName ||
+  railwayDbUser ||
+  railwayDbPassword,
+);
+const hasLocalVars = Boolean(
+  localDbHost ||
+  localDbPort ||
+  localDbName ||
+  localDbUser ||
+  localDbPassword,
+);
+
+const source = databaseUrl
+  ? 'DATABASE_URL'
+  : hasRailwayVars
+  ? 'MYSQL variables'
+  : 'DB variables';
+
+if (source === 'MYSQL variables') {
   const missingRailwayVars = [];
-  if (!railwayDbHost) missingRailwayVars.push('MYSQLHOST');
-  if (!railwayDbPort) missingRailwayVars.push('MYSQLPORT');
-  if (!railwayDbName) missingRailwayVars.push('MYSQLDATABASE');
-  if (!railwayDbUser) missingRailwayVars.push('MYSQLUSER');
-  if (!railwayDbPassword) missingRailwayVars.push('MYSQLPASSWORD');
+  if (!railwayDbHost) missingRailwayVars.push('MYSQLHOST/MYSQL_HOST');
+  if (!railwayDbPort) missingRailwayVars.push('MYSQLPORT/MYSQL_PORT');
+  if (!railwayDbName) missingRailwayVars.push('MYSQLDATABASE/MYSQL_DATABASE');
+  if (!railwayDbUser) missingRailwayVars.push('MYSQLUSER/MYSQL_USER');
+  if (!railwayDbPassword) missingRailwayVars.push('MYSQLPASSWORD/MYSQL_PASSWORD');
 
   if (missingRailwayVars.length > 0) {
     throw new Error(
-      `Railway MySQL variables are missing. Add Railway MySQL plugin or configure ${missingRailwayVars.join(', ')}.`,
+      `MySQL variable set incomplete. Configure ${missingRailwayVars.join(', ')} or use DATABASE_URL/DB_* variables.`,
     );
   }
 }
 
-const DB_HOST = isRailwayEnvironment
+if (isRailwayEnvironment && source === 'DB variables') {
+  throw new Error(
+    'Railway database is not attached. Add Railway MySQL service or manually add DB variables.',
+  );
+}
+// Parse DATABASE_URL when present so we can still show host/name in logs
+let parsedUrlHost;
+let parsedUrlDatabase;
+if (databaseUrl) {
+  try {
+    const u = new URL(databaseUrl);
+    parsedUrlHost = u.hostname || undefined;
+    parsedUrlDatabase = u.pathname ? u.pathname.replace(/^\//, '') : undefined;
+  } catch (e) {
+    parsedUrlHost = undefined;
+    parsedUrlDatabase = undefined;
+  }
+}
+
+const DB_HOST = source === 'DATABASE_URL'
+  ? parsedUrlHost
+  : source === 'MYSQL variables'
   ? railwayDbHost
-  : process.env.DB_HOST || railwayDbHost || '127.0.0.1';
+  : localDbHost || railwayDbHost || '127.0.0.1';
 
-const DB_PORT = isRailwayEnvironment
+const DB_PORT = source === 'DATABASE_URL'
+  ? (parsedUrlHost ? String(new URL(databaseUrl).port || '3306') : undefined)
+  : source === 'MYSQL variables'
   ? railwayDbPort
-  : process.env.DB_PORT || railwayDbPort || '3306';
+  : localDbPort || railwayDbPort || '3306';
 
-const DB_NAME = isRailwayEnvironment
+const DB_NAME = source === 'DATABASE_URL'
+  ? parsedUrlDatabase
+  : source === 'MYSQL variables'
   ? railwayDbName
-  : process.env.DB_NAME || railwayDbName || 'nexgen';
+  : localDbName || railwayDbName || 'nexgen';
 
-const DB_USER = isRailwayEnvironment
+const DB_USER = source === 'DATABASE_URL'
+  ? (databaseUrl ? new URL(databaseUrl).username : undefined)
+  : source === 'MYSQL variables'
   ? railwayDbUser
-  : process.env.DB_USER || railwayDbUser || 'root';
+  : localDbUser || railwayDbUser || 'root';
 
-const DB_PASSWORD = isRailwayEnvironment
+const DB_PASSWORD = source === 'DATABASE_URL'
+  ? (databaseUrl ? new URL(databaseUrl).password : undefined)
+  : source === 'MYSQL variables'
   ? railwayDbPassword
-  : process.env.DB_PASSWORD || process.env.DB_PASS || railwayDbPassword || '';
+  : localDbPassword || railwayDbPassword || '';
 
 const dbPassword = DB_PASSWORD;
 const hasRailwayMysqlConfig = Boolean(railwayDbHost && railwayDbName && railwayDbUser);
@@ -60,22 +117,34 @@ function sequelizeLogging(sql, timing) {
 
 export const databaseConfig = {
   host: DB_HOST,
-  port: Number(DB_PORT),
+  port: Number(DB_PORT || 0),
   database: DB_NAME,
   username: DB_USER,
+  source,
   isRailway: isRailwayEnvironment,
-  hasRailwayMysqlConfig: hasRailwayMysqlConfig,
+  hasRailwayMysqlConfig,
   mysqlHostExists: Boolean(railwayDbHost),
+  databaseUrlExists: Boolean(databaseUrl),
 };
 
-export const sequelize = new Sequelize(DB_NAME, DB_USER, dbPassword, {
-  host: DB_HOST,
-  port: Number(DB_PORT),
-  dialect: 'mysql',
-  logging: isDevLoggingEnabled() ? sequelizeLogging : false,
-  benchmark: isDevLoggingEnabled(),
-  define: {
-    underscored: true,
-    freezeTableName: true,
-  },
-});
+export const sequelize = databaseUrl
+  ? new Sequelize(databaseUrl, {
+      dialect: 'mysql',
+      logging: isDevLoggingEnabled() ? sequelizeLogging : false,
+      benchmark: isDevLoggingEnabled(),
+      define: {
+        underscored: true,
+        freezeTableName: true,
+      },
+    })
+  : new Sequelize(DB_NAME, DB_USER, dbPassword, {
+      host: DB_HOST,
+      port: Number(DB_PORT),
+      dialect: 'mysql',
+      logging: isDevLoggingEnabled() ? sequelizeLogging : false,
+      benchmark: isDevLoggingEnabled(),
+      define: {
+        underscored: true,
+        freezeTableName: true,
+      },
+    });
