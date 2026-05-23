@@ -9,7 +9,15 @@ import { isDevLoggingEnabled } from './utils/devLogger.js';
 
 const app = express();
 app.use(helmet());
-app.use(cors({ origin: '*', credentials: false }));
+const corsOrigins = process.env.CORS_ORIGIN?.trim();
+app.use(
+  cors({
+    origin: corsOrigins
+      ? corsOrigins.split(',').map((o) => o.trim()).filter(Boolean)
+      : '*',
+    credentials: false,
+  }),
+);
 
 if (isDevLoggingEnabled()) {
   app.use(requestTraceMiddleware);

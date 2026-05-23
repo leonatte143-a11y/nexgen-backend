@@ -1,4 +1,4 @@
-import 'dotenv/config';
+import '../loadEnv.js';
 import bcrypt from 'bcryptjs';
 import { randomInt } from 'crypto';
 import {

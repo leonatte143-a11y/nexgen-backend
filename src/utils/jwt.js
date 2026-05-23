@@ -41,13 +41,38 @@ export function assertJwtSecretsConfigured() {
 
   const hint =
     'Set JWT_USER_SECRET, JWT_PARTNER_SECRET, and JWT_ADMIN_SECRET (recommended), ' +
-    'or set JWT_SECRET alone as a shared signing key for all roles. See .env.example.';
+    'or set JWT_SECRET alone as a shared signing key for all roles.';
+
+  const runningOnRailway = process.env.NEXGEN_RAILWAY === 'true' || Boolean(process.env.RAILWAY);
+
+  if (runningOnRailway) {
+    // In hosted environments we should not instruct users to create a local .env file.
+    throw new Error(
+      `[NEXGEN] Missing JWT secret for role(s): ${missing.join(', ')}. ${hint} ` +
+        `Set the variables in your Railway (or platform) environment variables panel.`,
+    );
+  }
+
+  // Local developer guidance (keep the old helpful message pointing to .env).
   const envFile = backendEnvFilePath();
   throw new Error(
     `[NEXGEN] Missing JWT secret for role(s): ${missing.join(', ')}. ${hint}\n` +
       `Expected a file at: ${envFile}\n` +
       `If it is missing, run: cp .env.example .env   (from the backend folder, same directory as package.json)`,
   );
+}
+
+/**
+ * Return a machine-readable report of which JWT signing keys are available.
+ */
+export function jwtSecretsReport() {
+  return {
+    user: Boolean(getJwtSecretForRole('user')),
+    partner: Boolean(getJwtSecretForRole('partner')),
+    admin: Boolean(getJwtSecretForRole('admin')),
+    shared: Boolean(envTrim('JWT_SECRET')),
+  };
+
 }
 
 function expiresIn() {

@@ -1,5 +1,4 @@
 import { Sequelize } from 'sequelize';
-import 'dotenv/config';
 import { dbLog, isDevLoggingEnabled } from '../utils/devLogger.js';
 
 const {
