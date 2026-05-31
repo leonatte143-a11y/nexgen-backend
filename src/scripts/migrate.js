@@ -1,0 +1,56 @@
+/**
+ * Safe migration script for Railway deployment.
+ *
+ * Default (idempotent):
+ *   - Dedupe known duplicate UNIQUE indexes (users.phone, etc.)
+ *   - sync({ alter: false }) — creates missing tables only, no column alters
+ *
+ * Optional column alters (use sparingly):
+ *   DB_SYNC_ALTER=true npm run db:migrate
+ *
+ * If migration failed with "Too many keys specified":
+ *   npm run db:cleanup-indexes
+ *   npm run db:migrate
+ */
+
+import '../loadEnv.js';
+import { sequelize, syncDatabase } from '../models/index.js';
+import { runIndexDedupePass } from '../utils/indexMaintenance.js';
+
+const alterTables = process.env.DB_SYNC_ALTER === 'true';
+
+async function migrate() {
+  console.log('[NEXGEN] Starting database migration');
+  console.log('[NEXGEN] NODE_ENV =', process.env.NODE_ENV || 'development');
+  console.log('[NEXGEN] Altering tables =', alterTables);
+
+  try {
+    await sequelize.authenticate();
+
+    console.log('[NEXGEN] Running index dedupe pass (prevents duplicate UNIQUE indexes)...');
+    const dedupe = await runIndexDedupePass(sequelize);
+    for (const r of dedupe) {
+      if (r.dropped.length > 0 || r.created) {
+        console.log(
+          `[NEXGEN]   ${r.tableName}: kept=${r.kept} dropped=${r.dropped.length} created=${r.created}`,
+        );
+      }
+    }
+
+    await syncDatabase({ alter: alterTables });
+    console.log('[NEXGEN] ✓ Database migration complete');
+    console.log('[NEXGEN] All tables are ready.');
+    if (!alterTables) {
+      console.log('[NEXGEN] Tip: new tables are created; set DB_SYNC_ALTER=true only when you need column changes.');
+    }
+    process.exit(0);
+  } catch (error) {
+    console.error('[NEXGEN] ✗ Migration failed:', error.message || error);
+    if (String(error.message || '').includes('Too many keys')) {
+      console.error('[NEXGEN] Run: npm run db:cleanup-indexes');
+    }
+    process.exit(1);
+  }
+}
+
+migrate();

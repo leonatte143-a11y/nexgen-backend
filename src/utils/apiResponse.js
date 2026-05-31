@@ -14,7 +14,9 @@ export function fail(message, status = 400, data = null) {
 }
 
 export function sendOk(res, data, message = '', status = 200) {
-  return res.status(status).json({ success: true, data, message });
+  // Always return JSON envelope (never 204) so admin/mobile clients parse consistently
+  const httpStatus = status === 204 ? 200 : status;
+  return res.status(httpStatus).json({ success: true, data, message: message ?? '' });
 }
 
 export function sendFail(res, message, status = 400, data = null) {

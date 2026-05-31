@@ -24,6 +24,9 @@ import { definePayoutQueue } from './PayoutQueue.js';
 import { defineAppSetting } from './AppSetting.js';
 import { defineAdminAuditLog } from './AdminAuditLog.js';
 import { defineGeoZone } from './GeoZone.js';
+import { defineRevenueTransaction } from './RevenueTransaction.js';
+import { defineSupportConversation } from './SupportConversation.js';
+import { defineSupportMessage } from './SupportMessage.js';
 
 export const User = defineUser(sequelize);
 export const Partner = definePartner(sequelize);
@@ -48,6 +51,9 @@ export const PayoutQueue = definePayoutQueue(sequelize);
 export const AppSetting = defineAppSetting(sequelize);
 export const AdminAuditLog = defineAdminAuditLog(sequelize);
 export const GeoZone = defineGeoZone(sequelize);
+export const RevenueTransaction = defineRevenueTransaction(sequelize);
+export const SupportConversation = defineSupportConversation(sequelize);
+export const SupportMessage = defineSupportMessage(sequelize);
 
 Service.belongsTo(Category, { foreignKey: 'categoryId', as: 'category' });
 Service.belongsTo(Partner, { foreignKey: 'partnerId', as: 'partner' });
@@ -66,6 +72,8 @@ Booking.belongsTo(Service, { foreignKey: 'serviceId', as: 'service' });
 Partner.hasMany(PartnerServicePricing, { foreignKey: 'partnerId' });
 User.hasMany(Notification, { foreignKey: 'userId' });
 Review.belongsTo(Booking, { foreignKey: 'bookingId' });
+SupportMessage.belongsTo(SupportConversation, { foreignKey: 'conversationId', as: 'conversation' });
+SupportConversation.hasMany(SupportMessage, { foreignKey: 'conversationId', as: 'messages' });
 
 User.hasMany(Testimonial, { foreignKey: 'userId' });
 Partner.hasMany(Testimonial, { foreignKey: 'partnerId' });

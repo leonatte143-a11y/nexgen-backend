@@ -5,7 +5,7 @@ export function definePartner(sequelize) {
   Partner.init(
     {
       id: { type: DataTypes.STRING(64), primaryKey: true },
-      phone: { type: DataTypes.STRING(16), unique: true, allowNull: false },
+      phone: { type: DataTypes.STRING(16), allowNull: false },
       name: DataTypes.STRING(256),
       photoUrl: DataTypes.STRING(512),
       rating: { type: DataTypes.DECIMAL(3, 2), defaultValue: 4.8 },
@@ -30,7 +30,13 @@ export function definePartner(sequelize) {
       completedJobsCount: { type: DataTypes.INTEGER, defaultValue: 0 },
       rewardPoints: { type: DataTypes.INTEGER, defaultValue: 0 },
     },
-    { sequelize, modelName: 'Partner', tableName: 'partners', timestamps: true },
+    {
+      sequelize,
+      modelName: 'Partner',
+      tableName: 'partners',
+      timestamps: true,
+      indexes: [{ unique: true, fields: ['phone'], name: 'partners_phone_unique' }],
+    },
   );
   return Partner;
 }

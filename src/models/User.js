@@ -5,7 +5,7 @@ export function defineUser(sequelize) {
   User.init(
     {
       id: { type: DataTypes.STRING(64), primaryKey: true },
-      phone: { type: DataTypes.STRING(16), unique: true, allowNull: false },
+      phone: { type: DataTypes.STRING(16), allowNull: false },
       firstName: DataTypes.STRING(128),
       lastName: DataTypes.STRING(128),
       email: DataTypes.STRING(256),
@@ -14,7 +14,13 @@ export function defineUser(sequelize) {
       referralCode: DataTypes.STRING(32),
       isBlocked: { type: DataTypes.BOOLEAN, defaultValue: false },
     },
-    { sequelize, modelName: 'User', tableName: 'users', timestamps: true },
+    {
+      sequelize,
+      modelName: 'User',
+      tableName: 'users',
+      timestamps: true,
+      indexes: [{ unique: true, fields: ['phone'], name: 'users_phone_unique' }],
+    },
   );
   return User;
 }
