@@ -47,24 +47,22 @@ export async function listPendingKyc(_req, res, next) {
       if (!byPartner.has(d.partnerId)) byPartner.set(d.partnerId, []);
       byPartner.get(d.partnerId).push(d);
     }
-    return sendOk(
-      res,
-      rows.map((p) => ({
-        id: p.id,
-        name: p.name,
-        phone: p.phone,
-        categories: p.categories,
-        skills: p.skills,
-        verificationStatus: p.verificationStatus,
-        photoUrl: p.photoUrl,
-        documents: (byPartner.get(p.id) || []).map((d) => ({
-          id: d.id,
-          docType: d.docType,
-          fileUrl: d.fileUrl,
-          status: d.status,
-        })),
+    const payload = rows.map((p) => ({
+      id: p.id,
+      name: p.name,
+      phone: p.phone,
+      categories: p.categories,
+      skills: p.skills,
+      verificationStatus: p.verificationStatus,
+      photoUrl: p.photoUrl,
+      documents: (byPartner.get(p.id) || []).map((d) => ({
+        id: d.id,
+        docType: d.docType,
+        fileUrl: d.fileUrl,
+        status: d.status,
       })),
-    );
+    }));
+    return sendOk(res, payload, 'ok', 200);
   } catch (e) {
     next(e);
   }

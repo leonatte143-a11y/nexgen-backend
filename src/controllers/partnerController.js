@@ -23,20 +23,53 @@ function normalizePartnerPhone(raw) {
   return phone.length === 10 ? phone : null;
 }
 
+function parseStringList(value) {
+  if (Array.isArray(value)) {
+    return value
+      .filter(Boolean)
+      .map((item) => String(item).trim())
+      .filter(Boolean);
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return [];
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) {
+        return parsed
+          .filter(Boolean)
+          .map((item) => String(item).trim())
+          .filter(Boolean);
+      }
+    } catch {
+      // ignore invalid JSON and fall back to delimiter split
+    }
+    return trimmed
+      .split(/[,;|]/)
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+  return [];
+}
+
+function uniqueStrings(values) {
+  return Array.from(new Set(values.map((item) => String(item || '').trim()).filter(Boolean)));
+}
+
 function partnerRegistrationFields(body) {
-  const categories = Array.isArray(body.categories)
-    ? body.categories.filter(Boolean)
-    : body.serviceCategory
-      ? [String(body.serviceCategory)]
-      : [];
+  const explicitCategories = parseStringList(body.categories);
+  const serviceCategory = body.serviceCategory ? String(body.serviceCategory).trim() : '';
+  const categories = uniqueStrings(
+    explicitCategories.length > 0 ? explicitCategories : serviceCategory ? [serviceCategory] : [],
+  );
   const primaryCity =
     body.primaryCity ||
     body.workLocation ||
-    (Array.isArray(body.categories) ? body.categories.find((c) => typeof c === 'string' && c.length > 2) : null) ||
+    categories.find((c) => typeof c === 'string' && c.length > 2) ||
     undefined;
   return {
     name: body.name?.trim() || 'Partner',
-    skills: Array.isArray(body.skills) ? body.skills : [],
+    skills: uniqueStrings(parseStringList(body.skills)),
     categories,
     primaryCity: primaryCity || 'Rajahmundry',
     bankName: body.bankName || '',

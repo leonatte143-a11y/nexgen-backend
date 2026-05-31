@@ -27,6 +27,50 @@ Backend derived from the **React Native** app’s service contracts in `../mobil
 4. The backend also accepts `DATABASE_URL` or `MYSQL_URL` when present.
 5. Redeploy the backend after attaching the database and confirm `DATABASE_URL` or `MYSQLHOST` is available.
 
+### Initial setup (first time)
+
+After MySQL service is attached to Railway, run the migration and seed:
+
+```bash
+npm run db:migrate   # creates all tables
+npm run db:seed      # creates admin user, categories, sample services, etc.
+```
+
+Or in one command:
+
+```bash
+npm run db:setup     # runs both migrate and seed
+```
+
+Check Railway logs to confirm:
+```
+[NEXGEN] ✓ Database migration complete
+[NEXGEN] Database connected
+```
+
+### Verifying the setup
+
+1. Wait for both `npm run db:setup` commands to complete.
+2. Check tables in Railway MySQL console: all tables (users, bookings, services, etc.) should exist.
+3. Run a test:
+   ```bash
+   curl https://your-railway-backend-url/health
+   # Expected: { "success": true, "data": { "status": "ok" }, "message": "NEXGEN API" }
+   ```
+4. Redeploy backend service (if not automatic).
+5. Mobile app can now call `https://your-railway-backend-url/api/v1/...`.
+
+### Troubleshooting Railway migration failures
+
+- **Symptom:** `connect ECONNREFUSED 127.0.0.1:3306`  
+  **Fix:** Ensure MySQL service is attached and `MYSQLHOST` environment variable is set. Redeploy.
+
+- **Symptom:** `Railway MySQL variables are missing`  
+  **Fix:** In Railway project settings, check that the MySQL service is connected to the backend service. The MySQL plugin should auto-inject variables like `MYSQLHOST`, etc.
+
+- **Symptom:** Tables created but seeding failed halfway  
+  **Fix:** Re-run `npm run db:seed` to complete or fix any seed data issues.
+
 Health: `GET /health`  
 Base path: `/api/v1/...`
 

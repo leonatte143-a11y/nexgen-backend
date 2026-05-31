@@ -5,12 +5,18 @@ export function defineAdminUser(sequelize) {
   AdminUser.init(
     {
       id: { type: DataTypes.STRING(64), primaryKey: true },
-      email: { type: DataTypes.STRING(256), unique: true, allowNull: false },
+      email: { type: DataTypes.STRING(256), allowNull: false },
       passwordHash: { type: DataTypes.STRING(256), allowNull: false },
       name: DataTypes.STRING(128),
       role: { type: DataTypes.STRING(32), defaultValue: 'super_admin' },
     },
-    { sequelize, modelName: 'AdminUser', tableName: 'admin_users', timestamps: true },
+    {
+      sequelize,
+      modelName: 'AdminUser',
+      tableName: 'admin_users',
+      timestamps: true,
+      indexes: [{ unique: true, fields: ['email'], name: 'admin_users_email_unique' }],
+    },
   );
   return AdminUser;
 }

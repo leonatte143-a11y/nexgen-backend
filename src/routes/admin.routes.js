@@ -20,6 +20,13 @@ r.use(requireAdmin);
 r.get('/dashboard/stats', dash.dashboardStats);
 r.get('/dashboard/bookings-chart', dash.bookingsChart);
 r.get('/dashboard/recent-activity', dash.recentActivity);
+r.get('/dashboard/partner-performance', dash.partnerPerformance);
+r.get('/dashboard/financial-breakdown', dash.financialBreakdown);
+r.get('/dashboard/financial-pipeline', dash.financialPipeline);
+r.get('/dashboard/user-growth', dash.userGrowth);
+r.get('/dashboard/reviews-sentiment', dash.reviewsSentiment);
+r.get('/dashboard/support-chat-summary', dash.supportChatSummary);
+r.get('/dashboard/alerts', dash.dashboardAlerts);
 r.get('/search-analytics', dash.searchAnalytics);
 r.get('/heatmap', dash.heatmap);
 

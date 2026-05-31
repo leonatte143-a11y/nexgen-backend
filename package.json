@@ -10,7 +10,10 @@
     "start": "NODE_ENV=production node src/index.js",
     "start:win": "set NODE_ENV=production&& node src/index.js",
     "db:sync": "node src/scripts/syncDb.js",
-    "db:seed": "node src/scripts/seed.js"
+    "db:migrate": "node src/scripts/migrate.js",
+    "db:cleanup-indexes": "node src/scripts/cleanupDuplicateIndexes.js",
+    "db:seed": "node src/scripts/seed.js",
+    "db:setup": "npm run db:migrate && npm run db:seed"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
