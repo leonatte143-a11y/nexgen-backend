@@ -17,8 +17,10 @@ import {
   Coupon,
   AppSetting,
   GeoZone,
+  StaffProfile,
 } from '../models/index.js';
 import { syncDatabase, sequelize } from '../models/index.js';
+import { runColumnEnsurePass } from '../utils/columnMaintenance.js';
 import { computeBill, DEFAULT_VISITING_FEE } from '../services/money.js';
 
 const BUCKETS = [
@@ -31,10 +33,8 @@ const BUCKETS = [
 ];
 
 async function ensureLegacyColumns() {
+  await runColumnEnsurePass(sequelize);
   const alters = [
-    'ALTER TABLE admin_users ADD COLUMN name VARCHAR(128) NULL',
-    'ALTER TABLE admin_users ADD COLUMN role VARCHAR(32) NOT NULL DEFAULT \'super_admin\'',
-    'ALTER TABLE services ADD COLUMN commission_percent DECIMAL(5,2) NOT NULL DEFAULT 10.00',
     'ALTER TABLE bookings ADD COLUMN created_at DATETIME NULL',
     'ALTER TABLE bookings ADD COLUMN updated_at DATETIME NULL',
   ];
@@ -62,6 +62,33 @@ async function run() {
       passwordHash: bcrypt.hashSync(adminPass, 10),
       name: 'NEXGEN Admin',
       role: 'super_admin',
+    });
+  }
+
+  const staffSeeds = [
+    { id: 'admin_mgr', email: 'manager@nexgen.local', name: 'Ops Manager', role: 'manager', baseSalary: 25000 },
+    { id: 'admin_hr', email: 'hr@nexgen.local', name: 'HR Lead', role: 'hr', baseSalary: 22000 },
+  ];
+  for (const s of staffSeeds) {
+    const [row] = await AdminUser.findOrCreate({
+      where: { email: s.email },
+      defaults: {
+        id: s.id,
+        email: s.email,
+        passwordHash: bcrypt.hashSync(adminPass, 10),
+        name: s.name,
+        role: s.role,
+      },
+    });
+    await StaffProfile.findOrCreate({
+      where: { adminUserId: row.id },
+      defaults: {
+        id: `sp_${s.id}`,
+        adminUserId: row.id,
+        designation: s.role === 'manager' ? 'Manager' : 'HR',
+        baseSalary: s.baseSalary,
+        upiId: `${s.role}@nexgen`,
+      },
     });
   }
 
@@ -358,7 +385,10 @@ async function run() {
     },
   });
 
-  console.log('Seed complete. Admin:', adminEmail, '/', adminPass);
+  console.log('Seed complete.');
+  console.log('  Admin:', adminEmail, '/', adminPass);
+  console.log('  Manager: manager@nexgen.local /', adminPass);
+  console.log('  HR: hr@nexgen.local /', adminPass);
   await sequelize.close();
   process.exit(0);
 }

@@ -1,94 +1,146 @@
 import { Router } from 'express';
 import { requireAdmin } from '../middlewares/auth.js';
+import { requirePermission } from '../middlewares/rbac.js';
+import { PERMISSIONS as P } from '../constants/rbac.js';
 import * as legacy from '../controllers/adminController.js';
 import * as banner from '../controllers/bannerController.js';
 import * as dash from '../controllers/admin/adminDashboardController.js';
 import * as partners from '../controllers/admin/adminPartnersController.js';
+import * as compliance from '../controllers/admin/adminPartnerComplianceController.js';
 import * as bookings from '../controllers/admin/adminBookingsController.js';
 import * as catalog from '../controllers/admin/adminCatalogController.js';
 import * as users from '../controllers/admin/adminUsersController.js';
 import * as support from '../controllers/admin/adminSupportController.js';
 import * as payouts from '../controllers/admin/adminPayoutsController.js';
+import * as finance from '../controllers/admin/adminFinanceController.js';
 import * as coupons from '../controllers/admin/adminCouponsController.js';
 import * as notifications from '../controllers/admin/adminNotificationsController.js';
 import * as settings from '../controllers/admin/adminSettingsController.js';
+import * as audit from '../controllers/admin/adminAuditController.js';
+import * as demand from '../controllers/admin/adminDemandController.js';
+import * as analytics from '../controllers/admin/adminAnalyticsController.js';
+import * as chat from '../controllers/admin/adminChatController.js';
+import * as fraud from '../controllers/admin/adminFraudController.js';
 
 const r = Router();
 r.use(requireAdmin);
 
-// Dashboard
-r.get('/dashboard/stats', dash.dashboardStats);
-r.get('/dashboard/bookings-chart', dash.bookingsChart);
-r.get('/dashboard/recent-activity', dash.recentActivity);
-r.get('/dashboard/partner-performance', dash.partnerPerformance);
-r.get('/dashboard/financial-breakdown', dash.financialBreakdown);
-r.get('/dashboard/financial-pipeline', dash.financialPipeline);
-r.get('/dashboard/user-growth', dash.userGrowth);
-r.get('/dashboard/reviews-sentiment', dash.reviewsSentiment);
-r.get('/dashboard/support-chat-summary', dash.supportChatSummary);
-r.get('/dashboard/alerts', dash.dashboardAlerts);
-r.get('/search-analytics', dash.searchAnalytics);
-r.get('/heatmap', dash.heatmap);
+// Dashboard — all staff
+r.get('/dashboard/stats', requirePermission(P.DASHBOARD_VIEW), dash.dashboardStats);
+r.get('/dashboard/bookings-chart', requirePermission(P.DASHBOARD_VIEW), dash.bookingsChart);
+r.get('/dashboard/recent-activity', requirePermission(P.DASHBOARD_VIEW), dash.recentActivity);
+r.get('/dashboard/partner-performance', requirePermission(P.DASHBOARD_VIEW), dash.partnerPerformance);
+r.get('/dashboard/financial-breakdown', requirePermission(P.REVENUE_VIEW), dash.financialBreakdown);
+r.get('/dashboard/financial-pipeline', requirePermission(P.REVENUE_VIEW), dash.financialPipeline);
+r.get('/dashboard/user-growth', requirePermission(P.ANALYTICS_VIEW), dash.userGrowth);
+r.get('/dashboard/reviews-sentiment', requirePermission(P.DASHBOARD_VIEW), dash.reviewsSentiment);
+r.get('/dashboard/support-chat-summary', requirePermission(P.SUPPORT_MANAGE), dash.supportChatSummary);
+r.get('/dashboard/alerts', requirePermission(P.DASHBOARD_VIEW), dash.dashboardAlerts);
+r.get('/search-analytics', requirePermission(P.DEMAND_ANALYTICS), dash.searchAnalytics);
+r.get('/heatmap', requirePermission(P.DEMAND_ANALYTICS), dash.heatmap);
+
+// Audit
+r.get('/audit-logs', requirePermission(P.AUDIT_VIEW), audit.listAuditLogs);
+
+// Demand analytics
+r.get('/demand-analytics', requirePermission(P.DEMAND_ANALYTICS), demand.listDemandAnalytics);
+r.get('/demand-analytics/summary', requirePermission(P.DEMAND_ANALYTICS), demand.demandAnalyticsSummary);
+
+// Analytics power center
+r.get('/analytics', requirePermission(P.ANALYTICS_VIEW), analytics.getAnalytics);
+
+// Service zones — admin only establish
+r.post('/service-zones', requirePermission(P.ESTABLISH_LOCATION), analytics.establishServiceZone);
 
 // KYC & partners
-r.get('/partners', partners.listPartners);
-r.get('/partners/kyc/pending', partners.listPendingKyc);
-r.get('/partners/kyc/:id', partners.getPartnerKyc);
-r.post('/partners/kyc/:id/approve', partners.approveKyc);
-r.post('/partners/kyc/:id/reject', partners.rejectKyc);
-r.put('/partners/:id', partners.updatePartner);
-r.post('/partners/:id/documents', partners.uploadPartnerDocument);
+r.get('/partners', requirePermission(P.PARTNERS_MANAGE), partners.listPartners);
+r.get('/partners/kyc/pending', requirePermission(P.KYC_MANAGE), partners.listPendingKyc);
+r.get('/partners/kyc/:id', requirePermission(P.KYC_MANAGE), partners.getPartnerKyc);
+r.post('/partners/kyc/:id/approve', requirePermission(P.KYC_MANAGE), partners.approveKyc);
+r.post('/partners/kyc/:id/reject', requirePermission(P.KYC_MANAGE), partners.rejectKyc);
+r.put('/partners/:id', requirePermission(P.PARTNERS_MANAGE), partners.updatePartner);
+r.post('/partners/:id/documents', requirePermission(P.KYC_MANAGE), partners.uploadPartnerDocument);
+r.post('/partners/:id/warn', requirePermission(P.PARTNERS_COMPLIANCE), compliance.warnPartner);
+r.post('/partners/:id/freeze', requirePermission(P.PARTNERS_COMPLIANCE), compliance.freezePartner);
+r.post('/partners/:id/block', requirePermission(P.PARTNERS_COMPLIANCE), compliance.blockPartner);
+r.post('/partners/:id/archive', requirePermission(P.PARTNERS_COMPLIANCE), compliance.archivePartner);
+r.get('/partners/strike-board', requirePermission(P.PARTNERS_COMPLIANCE), compliance.strikeBoard);
 
 // Catalog & pricing
-r.get('/categories', catalog.listCategories);
-r.put('/categories/:id', catalog.updateCategory);
-r.post('/categories', legacy.createCategory);
-r.get('/services', catalog.listServicesAdmin);
-r.put('/services/:id', catalog.updateService);
-r.post('/services', legacy.createService);
+r.get('/categories', requirePermission(P.SERVICES_MANAGE, P.DASHBOARD_VIEW), catalog.listCategories);
+r.put('/categories/:id', requirePermission(P.PRICING_MANAGE), catalog.updateCategory);
+r.post('/categories', requirePermission(P.SERVICES_MANAGE), legacy.createCategory);
+r.get('/services', requirePermission(P.SERVICES_MANAGE, P.DASHBOARD_VIEW), catalog.listServicesAdmin);
+r.put('/services/:id', requirePermission(P.PRICING_MANAGE), catalog.updateService);
+r.post('/services', requirePermission(P.SERVICES_MANAGE), legacy.createService);
+r.delete('/services/:id', requirePermission(P.SERVICES_MANAGE), legacy.deleteService);
 
 // Bookings
-r.get('/bookings', bookings.listBookings);
-r.get('/bookings/live', bookings.liveBookings);
-r.put('/bookings/:id/assign', bookings.assignPartner);
+r.get('/bookings', requirePermission(P.BOOKINGS_MANAGE), bookings.listBookings);
+r.get('/bookings/live', requirePermission(P.LIVE_MONITOR), bookings.liveBookings);
+r.get('/bookings/online-partners', requirePermission(P.BOOKINGS_REASSIGN), bookings.onlinePartnersForReassign);
+r.put('/bookings/:id/assign', requirePermission(P.BOOKINGS_MANAGE), bookings.assignPartner);
+r.post('/bookings/:bookingId/reassign', requirePermission(P.BOOKINGS_REASSIGN), bookings.reassignPartner);
 
 // Users
-r.get('/users', users.listUsersAdmin);
-r.put('/users/:id/block', users.setUserBlocked);
+r.get('/users', requirePermission(P.USERS_MANAGE), users.listUsersAdmin);
+r.put('/users/:id/block', requirePermission(P.USERS_MANAGE), users.setUserBlocked);
 
-// Support
-r.get('/support/tickets', support.listTickets);
-r.post('/support/tickets', support.createTicket);
-r.put('/support/tickets/:id', support.updateTicket);
-r.post('/support/tickets/:id/freeze-payment', support.freezePayment);
-r.post('/support/tickets/:id/refund', support.triggerRefund);
+// Support / disputes
+r.get('/disputes', requirePermission(P.SUPPORT_MANAGE), support.listTickets);
+r.get('/support/tickets', requirePermission(P.SUPPORT_MANAGE), support.listTickets);
+r.post('/support/tickets', requirePermission(P.SUPPORT_MANAGE), support.createTicket);
+r.put('/support/tickets/:id', requirePermission(P.SUPPORT_MANAGE), support.updateTicket);
+r.post('/support/tickets/:id/freeze-payment', requirePermission(P.SUPPORT_MANAGE), support.freezePayment);
+r.post('/disputes/:id/freeze-payment', requirePermission(P.SUPPORT_MANAGE), support.freezePayment);
+r.post('/support/tickets/:id/refund', requirePermission(P.SUPPORT_MANAGE), support.triggerRefund);
+r.post('/disputes/:id/refund', requirePermission(P.SUPPORT_MANAGE), support.triggerRefund);
 
-// Payouts
-r.get('/payouts/queue', payouts.payoutQueue);
-r.post('/payouts/generate', payouts.generatePayoutFile);
-r.get('/payouts/history', payouts.settlementHistory);
-r.get('/payouts/commission-report', payouts.commissionReport);
+// Payouts (legacy + finance module)
+r.get('/payouts/queue', requirePermission(P.PAYOUTS_MANAGE), payouts.payoutQueue);
+r.post('/payouts/generate', requirePermission(P.PAYOUTS_MANAGE), payouts.generatePayoutFile);
+r.get('/payouts/history', requirePermission(P.PAYOUTS_MANAGE), payouts.settlementHistory);
+r.get('/payouts/commission-report', requirePermission(P.PAYOUTS_MANAGE), payouts.commissionReport);
+r.get('/finance/payouts', requirePermission(P.PAYOUTS_MANAGE), finance.listFinancePayouts);
+r.post('/finance/payouts/generate', requirePermission(P.PAYOUTS_MANAGE), finance.generateFinancePayout);
+r.post('/finance/payouts/:id/mark-paid', requirePermission(P.PAYOUTS_MANAGE), finance.markPayoutPaid);
+r.get('/finance/wallet-history', requirePermission(P.PAYOUTS_MANAGE), finance.walletHistory);
+r.get('/finance/payroll', requirePermission(P.PAYROLL_VIEW), finance.listStaffPayroll);
+r.post('/finance/payroll/calculate', requirePermission(P.PAYROLL_VIEW), finance.calculateStaffPayroll);
 
-// Coupons
-r.get('/coupons', coupons.listCoupons);
-r.post('/coupons', coupons.createCoupon);
-r.put('/coupons/:id', coupons.updateCoupon);
+// Coupons & marketing
+r.get('/coupons', requirePermission(P.MARKETING_MANAGE), coupons.listCoupons);
+r.post('/coupons', requirePermission(P.MARKETING_MANAGE), coupons.createCoupon);
+r.put('/coupons/:id', requirePermission(P.MARKETING_MANAGE), coupons.updateCoupon);
+r.delete('/coupons/:id', requirePermission(P.MARKETING_MANAGE), coupons.deleteCoupon);
+r.get('/referrals', requirePermission(P.MARKETING_MANAGE), coupons.listReferrals);
+r.post('/notifications/targeted', requirePermission(P.MARKETING_MANAGE), notifications.targetedNotification);
 
 // Notifications
-r.get('/notifications', notifications.listNotificationsAdmin);
-r.post('/notifications/broadcast', notifications.broadcast);
+r.get('/notifications', requirePermission(P.NOTIFICATIONS_BROADCAST), notifications.listNotificationsAdmin);
+r.post('/notifications/broadcast', requirePermission(P.NOTIFICATIONS_BROADCAST), notifications.broadcast);
+
+// Chat monitor
+r.get('/chats', requirePermission(P.CHAT_MONITOR), chat.listChats);
+r.get('/chats/alerts', requirePermission(P.CHAT_MONITOR), chat.chatAlerts);
+r.get('/chats/:id', requirePermission(P.CHAT_MONITOR), chat.getChat);
+r.put('/chats/settings', requirePermission(P.SETTINGS_MANAGE), chat.updateChatSettings);
+
+// Fraud
+r.get('/fraud-flags', requirePermission(P.FRAUD_VIEW), fraud.listFraudFlags);
+r.post('/fraud-flags/scan', requirePermission(P.FRAUD_VIEW), fraud.scanFraudSignals);
 
 // Settings & geo
-r.get('/settings', settings.getAppSettings);
-r.put('/settings', settings.patchAppSettings);
-r.get('/geo/zones', settings.listGeoZones);
-r.post('/geo/zones', settings.upsertGeoZone);
-r.post('/geo/surge', settings.setSurge);
+r.get('/settings', requirePermission(P.SETTINGS_MANAGE), settings.getAppSettings);
+r.put('/settings', requirePermission(P.SETTINGS_MANAGE), settings.patchAppSettings);
+r.get('/geo/zones', requirePermission(P.SETTINGS_MANAGE, P.DEMAND_ANALYTICS), settings.listGeoZones);
+r.post('/geo/zones', requirePermission(P.ESTABLISH_LOCATION), settings.upsertGeoZone);
+r.post('/geo/surge', requirePermission(P.SETTINGS_MANAGE), settings.setSurge);
 
-// Banners (existing)
-r.get('/banners', banner.adminListBanners);
-r.post('/banners', banner.adminCreateBanner);
-r.put('/banners/:id', banner.adminUpdateBanner);
-r.delete('/banners/:id', banner.adminDeleteBanner);
+// Banners
+r.get('/banners', requirePermission(P.MARKETING_MANAGE), banner.adminListBanners);
+r.post('/banners', requirePermission(P.MARKETING_MANAGE), banner.adminCreateBanner);
+r.put('/banners/:id', requirePermission(P.MARKETING_MANAGE), banner.adminUpdateBanner);
+r.delete('/banners/:id', requirePermission(P.MARKETING_MANAGE), banner.adminDeleteBanner);
 
 export default r;

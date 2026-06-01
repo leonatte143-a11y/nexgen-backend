@@ -55,6 +55,8 @@ export function requireAdmin(req, res, next) {
       return sendFail(res, 'Invalid token for this resource', 403);
     }
     req.adminId = payload.sub;
+    req.adminRole = payload.adminRole || payload.staffRole || 'admin';
+    req.adminEmail = payload.email;
     next();
   } catch {
     return sendFail(res, 'Invalid or expired token', 401);

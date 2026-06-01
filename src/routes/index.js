@@ -11,6 +11,7 @@ import testimonialRoutes from './testimonial.routes.js';
 import academyRoutes from './academy.routes.js';
 import favoriteRoutes from './favorite.routes.js';
 import bannerRoutes from './banner.routes.js';
+import searchRoutes from './search.routes.js';
 
 const v1 = Router();
 
@@ -25,6 +26,7 @@ v1.use('/reviews', reviewRoutes);
 v1.use('/testimonials', testimonialRoutes);
 v1.use('/academy', academyRoutes);
 v1.use('/banners', bannerRoutes);
+v1.use('/search', searchRoutes);
 // Favorites are under /users/me/favorites (user auth)
 v1.use('/users', favoriteRoutes);
 

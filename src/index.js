@@ -1,7 +1,8 @@
 import './loadEnv.js';
 import { assertJwtSecretsConfigured, jwtSecretsReport } from './utils/jwt.js';
 import app from './app.js';
-import { connectDatabase, syncDatabase } from './models/index.js';
+import { connectDatabase, syncDatabase, sequelize } from './models/index.js';
+import { runColumnEnsurePass } from './utils/columnMaintenance.js';
 import { databaseConfig } from './config/database.js';
 
 const port = parseInt(process.env.PORT || '4000', 10);
@@ -39,6 +40,7 @@ async function main() {
   } else {
     try {
       await connectDatabase();
+      await runColumnEnsurePass(sequelize);
       console.log('[NEXGEN] Database connected');
     } catch (e) {
       const isRailway = process.env.NEXGEN_RAILWAY === 'true';

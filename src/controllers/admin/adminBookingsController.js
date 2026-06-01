@@ -104,8 +104,56 @@ export async function assignPartner(req, res, next) {
       partnerStatus: 'new',
       userStatus: 'partner_assigned',
     });
-    await recordAdminAction(req.adminId, 'booking_assign', { entityType: 'booking', entityId: b.id, meta: { partnerId } });
+    await recordAdminAction(req.adminId, 'booking_assign', {
+      entityType: 'booking',
+      entityId: b.id,
+      meta: { partnerId },
+      req,
+    });
     return sendOk(res, toAdminBooking(b, null, partner), 'Partner assigned');
+  } catch (e) {
+    next(e);
+  }
+}
+
+export async function reassignPartner(req, res, next) {
+  try {
+    const { newPartnerId, reason } = req.body;
+    if (!newPartnerId) return sendFail(res, 'newPartnerId required', 400);
+    const b = await Booking.findByPk(req.params.bookingId || req.params.id);
+    if (!b) return sendFail(res, 'Booking not found', 404);
+    const partner = await Partner.findByPk(newPartnerId);
+    if (!partner) return sendFail(res, 'Partner not found', 404);
+    if (!partner.isOnline) return sendFail(res, 'Partner must be online', 400);
+    const oldPartnerId = b.partnerId;
+    await b.update({
+      partnerId: partner.id,
+      partnerName: partner.name,
+      partnerRating: partner.rating,
+      partnerStatus: 'new',
+      userStatus: 'partner_assigned',
+    });
+    await recordAdminAction(req.adminId, 'booking_reassign', {
+      entityType: 'booking',
+      entityId: b.id,
+      meta: { oldPartnerId, newPartnerId, reason: reason || 'Partner not moving' },
+      req,
+    });
+    return sendOk(res, toAdminBooking(b, null, partner), 'Booking reassigned');
+  } catch (e) {
+    next(e);
+  }
+}
+
+export async function onlinePartnersForReassign(_req, res, next) {
+  try {
+    const rows = await Partner.findAll({
+      where: { isOnline: true, isBlocked: false, isFrozen: false, archivedAt: null },
+      attributes: ['id', 'name', 'phone', 'rating', 'primaryCity', 'isOnline'],
+      order: [['rating', 'DESC']],
+      limit: 50,
+    });
+    return sendOk(res, rows, 'ok');
   } catch (e) {
     next(e);
   }
