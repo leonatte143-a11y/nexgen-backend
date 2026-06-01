@@ -60,6 +60,17 @@ export async function listAllServices(req, res, next) {
   }
 }
 
+export async function deleteService(req, res, next) {
+  try {
+    const s = await Service.findByPk(req.params.id);
+    if (!s) return sendFail(res, 'Service not found', 404);
+    await s.update({ isActive: false });
+    return sendOk(res, { id: req.params.id, archived: true }, 'Service archived');
+  } catch (e) {
+    next(e);
+  }
+}
+
 export async function listUsers(_req, res, next) {
   try {
     const rows = await User.findAll({

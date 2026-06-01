@@ -33,6 +33,39 @@ export async function createCoupon(req, res, next) {
   }
 }
 
+export async function deleteCoupon(req, res, next) {
+  try {
+    const c = await Coupon.findByPk(req.params.id);
+    if (!c) return sendFail(res, 'Coupon not found', 404);
+    await c.update({ active: false });
+    return sendOk(res, c, 'Coupon deactivated');
+  } catch (e) {
+    next(e);
+  }
+}
+
+export async function listReferrals(_req, res, next) {
+  try {
+    const { User } = await import('../../models/index.js');
+    const users = await User.findAll({
+      attributes: ['id', 'firstName', 'lastName', 'phone', 'referralCode', 'createdAt'],
+      order: [['createdAt', 'DESC']],
+      limit: 100,
+    });
+    const byCode = new Map();
+    for (const u of users) {
+      const code = u.referralCode || 'none';
+      if (!byCode.has(code)) byCode.set(code, { code, signups: 0, users: [] });
+      const row = byCode.get(code);
+      row.signups += 1;
+      row.users.push({ id: u.id, name: [u.firstName, u.lastName].filter(Boolean).join(' '), phone: u.phone });
+    }
+    return sendOk(res, [...byCode.values()], 'ok');
+  } catch (e) {
+    next(e);
+  }
+}
+
 export async function updateCoupon(req, res, next) {
   try {
     const c = await Coupon.findByPk(req.params.id);

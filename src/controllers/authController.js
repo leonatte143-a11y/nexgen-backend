@@ -235,7 +235,11 @@ export async function adminLogin(req, res, next) {
     if (!admin || !bcrypt.compareSync(password, admin.passwordHash)) {
       return sendFail(res, 'Invalid credentials', 401);
     }
-    const token = signToken({ sub: admin.id, email: admin.email, role: admin.role }, 'admin');
+    const staffRole = admin.role || 'admin';
+    const token = signToken(
+      { sub: admin.id, email: admin.email, adminRole: staffRole },
+      'admin',
+    );
     return sendOk(
       res,
       {

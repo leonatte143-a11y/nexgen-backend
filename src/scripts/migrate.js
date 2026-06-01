@@ -16,6 +16,7 @@
 import '../loadEnv.js';
 import { sequelize, syncDatabase } from '../models/index.js';
 import { runIndexDedupePass } from '../utils/indexMaintenance.js';
+import { runColumnEnsurePass } from '../utils/columnMaintenance.js';
 
 const alterTables = process.env.DB_SYNC_ALTER === 'true';
 
@@ -38,6 +39,12 @@ async function migrate() {
     }
 
     await syncDatabase({ alter: alterTables });
+
+    const cols = await runColumnEnsurePass(sequelize);
+    if (cols.added > 0) {
+      console.log(`[NEXGEN] Column ensure pass: added=${cols.added} already-present=${cols.skipped}`);
+    }
+
     console.log('[NEXGEN] ✓ Database migration complete');
     console.log('[NEXGEN] All tables are ready.');
     if (!alterTables) {

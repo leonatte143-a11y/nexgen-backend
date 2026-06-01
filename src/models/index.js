@@ -27,6 +27,11 @@ import { defineGeoZone } from './GeoZone.js';
 import { defineRevenueTransaction } from './RevenueTransaction.js';
 import { defineSupportConversation } from './SupportConversation.js';
 import { defineSupportMessage } from './SupportMessage.js';
+import { definePartnerWarning } from './PartnerWarning.js';
+import { defineFraudFlag } from './FraudFlag.js';
+import { defineChatSetting } from './ChatSetting.js';
+import { defineStaffProfile } from './StaffProfile.js';
+import { defineStaffPayroll } from './StaffPayroll.js';
 
 export const User = defineUser(sequelize);
 export const Partner = definePartner(sequelize);
@@ -54,6 +59,11 @@ export const GeoZone = defineGeoZone(sequelize);
 export const RevenueTransaction = defineRevenueTransaction(sequelize);
 export const SupportConversation = defineSupportConversation(sequelize);
 export const SupportMessage = defineSupportMessage(sequelize);
+export const PartnerWarning = definePartnerWarning(sequelize);
+export const FraudFlag = defineFraudFlag(sequelize);
+export const ChatSetting = defineChatSetting(sequelize);
+export const StaffProfile = defineStaffProfile(sequelize);
+export const StaffPayroll = defineStaffPayroll(sequelize);
 
 Service.belongsTo(Category, { foreignKey: 'categoryId', as: 'category' });
 Service.belongsTo(Partner, { foreignKey: 'partnerId', as: 'partner' });
