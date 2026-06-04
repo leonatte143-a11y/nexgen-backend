@@ -6,6 +6,7 @@ import { sendOk, sendFail } from '../utils/apiResponse.js';
 import { toMockUser, toPartnerProfile } from '../serializers/mappers.js';
 import { upsertPartnerRegistration } from './partnerController.js';
 import { ctrlLog } from '../utils/devLogger.js';
+import { buildReferralCode, ensureUserReferralCode } from '../utils/referralCode.js';
 
 function normalizePhone(phone) {
   const d = String(phone || '').replace(/\D/g, '');
@@ -83,9 +84,10 @@ export async function verifyOtpUser(req, res, next) {
         email: '',
         address: '',
         rewardPoints: 0,
-        referralCode: 'NEXGEN2026',
+        referralCode: buildReferralCode({ phone, id }),
       },
     });
+    await ensureUserReferralCode(user);
     if (user.isBlocked) {
       ctrlLog('AUTH', 'OTP verify blocked user', req, { userId: user.id, phoneLast4: phone.slice(-4) });
       return res.status(200).json({
@@ -207,7 +209,7 @@ export async function registerUserProfile(req, res, next) {
         email: email || '',
         address: address || '',
         rewardPoints: 0,
-        referralCode: referralCode || 'NEXGEN2026',
+        referralCode: referralCode || buildReferralCode({ phone: p, id }),
       },
     });
     if (!created) {
@@ -216,9 +218,10 @@ export async function registerUserProfile(req, res, next) {
         lastName: lastName ?? u.lastName,
         email: email ?? u.email,
         address: address ?? u.address,
-        referralCode: referralCode ?? u.referralCode,
+        ...(referralCode !== undefined && { referralCode }),
       });
     }
+    await ensureUserReferralCode(u);
     return sendOk(res, toMockUser(u), 'Profile registered');
   } catch (e) {
     next(e);

@@ -35,6 +35,18 @@ const COLUMN_ALTERS = [
   "ALTER TABLE admin_users ADD COLUMN name VARCHAR(128) NULL",
   "ALTER TABLE admin_users ADD COLUMN role VARCHAR(32) NOT NULL DEFAULT 'super_admin'",
   "ALTER TABLE services ADD COLUMN commission_percent DECIMAL(5,2) NOT NULL DEFAULT 10.00",
+  "ALTER TABLE partner_service_pricings ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1",
+  "ALTER TABLE partner_service_pricings ADD COLUMN approval_status VARCHAR(32) NOT NULL DEFAULT 'approved'",
+  "ALTER TABLE partner_service_pricings ADD COLUMN previous_base_cost DECIMAL(10,2) NULL",
+  "ALTER TABLE partner_service_pricings ADD COLUMN reviewed_by VARCHAR(64) NULL",
+  "ALTER TABLE partner_service_pricings ADD COLUMN reviewed_at DATETIME NULL",
+  "ALTER TABLE partner_service_pricings ADD COLUMN rejection_reason TEXT NULL",
+  "ALTER TABLE bookings ADD COLUMN items_subtotal DECIMAL(12,2) NULL",
+  "ALTER TABLE bookings ADD COLUMN promo_discount DECIMAL(10,2) NULL DEFAULT 0",
+  "ALTER TABLE partners ADD COLUMN latitude DECIMAL(10,7) NULL",
+  "ALTER TABLE partners ADD COLUMN longitude DECIMAL(10,7) NULL",
+  "ALTER TABLE users ADD COLUMN latitude DECIMAL(10,7) NULL",
+  "ALTER TABLE users ADD COLUMN longitude DECIMAL(10,7) NULL",
 ];
 
 /**

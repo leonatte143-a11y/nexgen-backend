@@ -24,6 +24,8 @@ function humanizeAction(action, meta) {
     payout_generate: 'Generated Monday payout report',
     settings_update: 'Updated global settings',
     price_update: `Changed service price${meta?.serviceName ? `: ${meta.serviceName}` : ''}`,
+    partner_price_approve: meta?.label || 'Approved partner service price',
+    partner_price_reject: meta?.label || 'Rejected partner service price',
   };
   return map[action] || action.replace(/_/g, ' ');
 }

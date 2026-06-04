@@ -2,11 +2,67 @@ import { randomInt } from 'crypto';
 import { User, Service, Partner, Booking, Review } from '../models/index.js';
 import { sendOk, sendFail } from '../utils/apiResponse.js';
 import { toUserBooking } from '../serializers/mappers.js';
-import { computeBill, CANCELLATION_FEE_USER, DEFAULT_VISITING_FEE } from '../services/money.js';
+import {
+  computeBill,
+  CANCELLATION_FEE_USER,
+  DEFAULT_VISITING_FEE,
+} from '../services/money.js';
+import { quoteVisitingCharge, resolveCityCentroid } from '../services/visitingChargeService.js';
+import {
+  normalizeSelectedItems,
+  sumLineItems,
+  createBookingLineItems,
+  loadLineItemsForBookings,
+} from '../services/bookingLines.js';
 import { ctrlLog } from '../utils/devLogger.js';
 
 function genOtp() {
   return String(randomInt(1000, 10000));
+}
+
+function cityFromAddress(address, partner) {
+  const text = `${address || ''} ${partner?.primaryCity || ''}`.toLowerCase();
+  if (text.includes('guntur')) return 'Guntur';
+  if (text.includes('rajahmundry') || text.includes('rajamahendravaram')) return 'Rajahmundry';
+  return partner?.primaryCity || 'Rajahmundry';
+}
+
+async function bookingWithLineItems(booking) {
+  const map = await loadLineItemsForBookings([booking.id]);
+  return toUserBooking(booking, map.get(booking.id) || []);
+}
+
+export async function quoteVisitingChargeHandler(req, res, next) {
+  try {
+    const { userLat, userLng, partnerLat, partnerLng, city, partnerId } = req.body;
+    let pLat = partnerLat;
+    let pLng = partnerLng;
+    if (partnerId) {
+      const partner = await Partner.findByPk(String(partnerId));
+      if (partner?.latitude != null && partner?.longitude != null) {
+        pLat = partner.latitude;
+        pLng = partner.longitude;
+      } else if (partner) {
+        const c = resolveCityCentroid(partner.primaryCity);
+        pLat = c.lat;
+        pLng = c.lng;
+      }
+    }
+    const user = await User.findByPk(req.userId);
+    let uLat = userLat ?? user?.latitude;
+    let uLng = userLng ?? user?.longitude;
+    const quote = await quoteVisitingCharge({
+      userLat: uLat,
+      userLng: uLng,
+      partnerLat: pLat,
+      partnerLng: pLng,
+      city: city || user?.address,
+      partnerId,
+    });
+    return sendOk(res, quote);
+  } catch (e) {
+    next(e);
+  }
 }
 
 export async function listMyBookings(req, res, next) {
@@ -15,7 +71,8 @@ export async function listMyBookings(req, res, next) {
       where: { userId: req.userId },
       order: [['createdAt', 'DESC']],
     });
-    return sendOk(res, rows.map(toUserBooking));
+    const map = await loadLineItemsForBookings(rows.map((b) => b.id));
+    return sendOk(res, rows.map((b) => toUserBooking(b, map.get(b.id) || [])));
   } catch (e) {
     next(e);
   }
@@ -27,7 +84,7 @@ export async function getBooking(req, res, next) {
       where: { id: req.params.id, userId: req.userId },
     });
     if (!b) return sendFail(res, 'Booking not found', 404);
-    return sendOk(res, toUserBooking(b));
+    return sendOk(res, await bookingWithLineItems(b));
   } catch (e) {
     next(e);
   }
@@ -37,12 +94,18 @@ export async function createBooking(req, res, next) {
   try {
     const {
       serviceId,
+      partnerId: bodyPartnerId,
       address,
       notes = '',
       paymentMethod = 'cod',
       promoCode,
       amountOverride,
       serviceNameOverride,
+      distanceKm: bodyDistanceKm,
+      visitingCharges: bodyVisitingCharges,
+      selectedItems,
+      userLat,
+      userLng,
     } = req.body;
     if (!address) return sendFail(res, 'Address required', 400);
     if (!serviceId) return sendFail(res, 'serviceId required', 400);
@@ -51,21 +114,75 @@ export async function createBooking(req, res, next) {
     if (!user) return sendFail(res, 'User not found', 404);
     const service = await Service.findByPk(serviceId, { include: [{ model: Partner, as: 'partner' }] });
     if (!service) return sendFail(res, 'Service not found', 404);
-    const partner = service.partner;
+
+    let partner = service.partner;
+    if (bodyPartnerId) {
+      const selected = await Partner.findByPk(String(bodyPartnerId));
+      if (!selected) return sendFail(res, 'Partner not found', 404);
+      partner = selected;
+    }
     if (!partner) return sendFail(res, 'Partner not linked to service', 400);
 
-    const base = amountOverride != null ? Number(amountOverride) : parseFloat(String(service.basePrice));
-    const bill = computeBill(base, DEFAULT_VISITING_FEE);
+    const city = cityFromAddress(address, partner);
+    const quote =
+      bodyDistanceKm != null && bodyVisitingCharges != null
+        ? {
+            distanceKm: Math.max(0, Number(bodyDistanceKm)),
+            visitingCharges: Number(bodyVisitingCharges),
+          }
+        : await quoteVisitingCharge({
+            userLat: userLat ?? user.latitude,
+            userLng: userLng ?? user.longitude,
+            partnerLat: partner.latitude,
+            partnerLng: partner.longitude,
+            city,
+            partnerId: partner.id,
+          });
+
+    const lineItems = normalizeSelectedItems(selectedItems);
+    let itemsSubtotal = lineItems.length ? sumLineItems(lineItems) : 0;
+    if (!lineItems.length) {
+      itemsSubtotal =
+        amountOverride != null ? Number(amountOverride) : parseFloat(String(service.basePrice));
+    }
+
+    const visitingFee = quote.visitingCharges ?? DEFAULT_VISITING_FEE;
+    const bill = computeBill(itemsSubtotal, visitingFee);
+    let promoDiscount = 0;
     let totalAmount = bill.total;
     if (String(promoCode || '').toUpperCase() === 'NEXGEN2026') {
-      totalAmount = Math.max(0, totalAmount - 50);
+      promoDiscount = 50;
+      totalAmount = Math.max(0, totalAmount - promoDiscount);
     }
-    const subtotal = base + bill.visitingFee;
+
+    if (amountOverride != null) {
+      const expected = totalAmount;
+      const got = Math.round(Number(amountOverride));
+      const withGst =
+        itemsSubtotal +
+        visitingFee +
+        Math.round((itemsSubtotal + visitingFee) * 0.18) -
+        (String(promoCode || '').toUpperCase() === 'NEXGEN2026' ? 50 : 0);
+      const tolerance = Math.max(2, Math.round(withGst * 0.02));
+      if (Math.abs(got - expected) > tolerance && Math.abs(got - withGst) > tolerance) {
+        return sendFail(res, 'Booking total mismatch. Please refresh and try again.', 400);
+      }
+    }
+
+    const subtotal = itemsSubtotal + bill.visitingFee;
     const partnerShare = Math.round((subtotal - bill.adminComm) * 100) / 100;
 
     const name =
       [user.firstName, user.lastName].filter(Boolean).join(' ').trim() || `Customer ${user.phone.slice(-4)}`;
     const scheduled = new Date().toISOString();
+
+    const serviceLabel =
+      serviceNameOverride ||
+      (lineItems.length > 1
+        ? `${service.name} (${lineItems.length} items)`
+        : lineItems.length === 1
+          ? lineItems[0].title
+          : service.name);
 
     const b = await Booking.create({
       id: `bk_${Date.now()}_${randomInt(100, 1000)}`,
@@ -74,7 +191,7 @@ export async function createBooking(req, res, next) {
       partnerId: partner.id,
       userStatus: 'partner_assigned',
       partnerStatus: 'new',
-      serviceName: serviceNameOverride || service.name,
+      serviceName: serviceLabel,
       categoryLabel: service.categoryLabel,
       partnerName: partner.name,
       partnerRating: partner.rating,
@@ -82,6 +199,8 @@ export async function createBooking(req, res, next) {
       address,
       notes: String(notes).slice(0, 2000),
       totalAmount,
+      itemsSubtotal,
+      promoDiscount,
       visitingFee: bill.visitingFee,
       adminCommission: bill.adminComm,
       partnerShare,
@@ -93,12 +212,25 @@ export async function createBooking(req, res, next) {
       promoCode: promoCode || null,
       amountOverride: amountOverride != null ? Number(amountOverride) : null,
       serviceNameOverride: serviceNameOverride || null,
-      distanceKm: service.distanceKm,
+      distanceKm: quote.distanceKm,
       requestedAtLabel: 'Just now',
     });
 
-    ctrlLog('BOOKING', 'Booking created', req, { bookingId: b.id, serviceId, totalAmount });
-    return sendOk(res, toUserBooking(b), 'Booking created');
+    if (lineItems.length) {
+      await createBookingLineItems(b.id, lineItems);
+    }
+
+    if (userLat != null && userLng != null) {
+      await user.update({ latitude: userLat, longitude: userLng }).catch(() => {});
+    }
+
+    ctrlLog('BOOKING', 'Booking created', req, {
+      bookingId: b.id,
+      serviceId,
+      totalAmount,
+      lineItemCount: lineItems.length,
+    });
+    return sendOk(res, await bookingWithLineItems(b), 'Booking created');
   } catch (e) {
     next(e);
   }

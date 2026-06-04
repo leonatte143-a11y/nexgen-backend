@@ -1,4 +1,5 @@
 import { AppSetting } from '../models/index.js';
+import { DEFAULT_VISITING_CHARGE_TIERS } from './money.js';
 
 const DEFAULTS = {
   commission_percent: 10,
@@ -6,6 +7,9 @@ const DEFAULTS = {
   surge_fee_default: 0,
   otp_digits: 6,
   visiting_fee: 30,
+  visiting_charge_tiers: DEFAULT_VISITING_CHARGE_TIERS,
+  partner_price_min: 100,
+  partner_price_max: 1000,
   payout_threshold: 500,
   cities: ['Rajahmundry', 'Guntur'],
 };

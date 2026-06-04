@@ -2,11 +2,13 @@ import { User } from '../models/index.js';
 import { sendOk, sendFail } from '../utils/apiResponse.js';
 import { toMockUser } from '../serializers/mappers.js';
 import { ctrlLog } from '../utils/devLogger.js';
+import { ensureUserReferralCode } from '../utils/referralCode.js';
 
 export async function getMe(req, res, next) {
   try {
     const user = await User.findByPk(req.userId);
     if (!user) return sendFail(res, 'User not found', 404);
+    await ensureUserReferralCode(user);
     ctrlLog('PROFILE', 'getMe', req);
     return sendOk(res, toMockUser(user));
   } catch (e) {

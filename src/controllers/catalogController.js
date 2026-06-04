@@ -1,8 +1,16 @@
 import { Op } from 'sequelize';
-import { Category, Service, Partner, Review, sequelize } from '../models/index.js';
+
+const MENU_WHERE = {
+  isActive: true,
+  [Op.or]: [{ approvalStatus: 'approved' }, { approvalStatus: null }],
+};
+import { Category, Service, Partner, Review, PartnerServicePricing, sequelize } from '../models/index.js';
 import { sendOk } from '../utils/apiResponse.js';
 import { toCatalogService, toServiceBucket } from '../serializers/mappers.js';
 import { logSearch } from '../services/searchLogService.js';
+import { getSettings } from '../services/appSettingsService.js';
+import { visitingChargeForDistance } from '../services/money.js';
+import { toNum } from '../serializers/formatters.js';
 
 const TERM_ALIASES = new Map([
   ['electrical', 'electrician'],
@@ -171,9 +179,12 @@ export async function getServicePartners(req, res, next) {
     const partners = await Partner.findAll({
       where: {
         verificationStatus: { [Op.in]: ['Verified', 'Approved'] },
-        isOnline: true,
       },
-      order: [['rating', 'DESC'], ['jobsCompleted', 'DESC']],
+      order: [
+        ['isOnline', 'DESC'],
+        ['rating', 'DESC'],
+        ['jobsCompleted', 'DESC'],
+      ],
     });
 
     const partnerIds = partners.map((p) => p.id);
@@ -191,19 +202,80 @@ export async function getServicePartners(req, res, next) {
     }, {});
 
     const matching = partners.filter((partner) => matchesServiceTerms(partner, lookupTerms));
-    const payload = matching.map((p) => ({
+    const baseDistance = toNum(service.distanceKm) || 2.5;
+    const payload = matching.map((p, index) => ({
       id: p.id,
       name: p.name,
+      phone: p.phone,
       rating: Number(p.rating),
       jobsCompleted: p.jobsCompleted,
       photoUrl: p.photoUrl || undefined,
       reviewsCount: reviewCounts[p.id] ?? 0,
       categories: parseJsonArray(p.categories),
-      isOnline: p.isOnline,
-      distanceKm: null,
+      isOnline: Boolean(p.isOnline),
+      distanceKm: Math.round((baseDistance + index * 0.3) * 10) / 10,
     }));
 
     return sendOk(res, payload);
+  } catch (e) {
+    next(e);
+  }
+}
+
+/** GET /catalog/visiting-charge?distanceKm=1.2 */
+export async function getVisitingCharge(req, res, next) {
+  try {
+    const settings = await getSettings();
+    const tiers = settings.visiting_charge_tiers || settings.visitingChargeTiers;
+    const distanceKm = Math.max(0, parseFloat(String(req.query.distanceKm ?? '0')) || 0);
+    const amount = visitingChargeForDistance(distanceKm, tiers);
+    return sendOk(res, { distanceKm, amount, tiers: tiers || [] });
+  } catch (e) {
+    next(e);
+  }
+}
+
+/** GET /catalog/services/:id/partners/:partnerId/menu */
+export async function getPartnerServiceMenu(req, res, next) {
+  try {
+    const { id: serviceId, partnerId } = req.params;
+    const service = await Service.findByPk(serviceId);
+    if (!service) return sendOk(res, { items: [] });
+
+    const partner = await Partner.findByPk(partnerId);
+    if (!partner) return sendOk(res, { items: [] });
+
+    const rows = await PartnerServicePricing.findAll({
+      where: { partnerId, ...MENU_WHERE },
+      order: [['serviceName', 'ASC']],
+    });
+
+    const categoryLabel = String(service.categoryLabel || '').toLowerCase();
+    const filtered = rows.filter((row) => {
+      const cat = String(row.category || '').toLowerCase();
+      if (!cat || !categoryLabel) return true;
+      return cat === categoryLabel || categoryLabel.includes(cat) || cat.includes(categoryLabel);
+    });
+
+    const source = filtered.length ? filtered : rows;
+    const items =
+      source.length > 0
+        ? source.map((row) => ({
+            id: row.id,
+            title: row.serviceName || service.name,
+            subtitle: row.category || service.subtext || '',
+            price: toNum(row.baseCost),
+          }))
+        : [
+            {
+              id: `svc_${service.id}`,
+              title: service.name,
+              subtitle: service.subtext || 'Standard service',
+              price: toNum(service.basePrice),
+            },
+          ];
+
+    return sendOk(res, { items, partnerId, serviceId });
   } catch (e) {
     next(e);
   }

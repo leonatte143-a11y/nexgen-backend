@@ -21,6 +21,7 @@ import * as demand from '../controllers/admin/adminDemandController.js';
 import * as analytics from '../controllers/admin/adminAnalyticsController.js';
 import * as chat from '../controllers/admin/adminChatController.js';
 import * as fraud from '../controllers/admin/adminFraudController.js';
+import * as partnerPrices from '../controllers/admin/adminPartnerPricesController.js';
 
 const r = Router();
 r.use(requireAdmin);
@@ -66,6 +67,11 @@ r.post('/partners/:id/block', requirePermission(P.PARTNERS_COMPLIANCE), complian
 r.post('/partners/:id/archive', requirePermission(P.PARTNERS_COMPLIANCE), compliance.archivePartner);
 r.get('/partners/strike-board', requirePermission(P.PARTNERS_COMPLIANCE), compliance.strikeBoard);
 
+// Partner price review
+r.get('/partner-prices/pending', requirePermission(P.PRICING_MANAGE), partnerPrices.listPendingPartnerPrices);
+r.post('/partner-prices/:id/approve', requirePermission(P.PRICING_MANAGE), partnerPrices.approvePartnerPrice);
+r.post('/partner-prices/:id/reject', requirePermission(P.PRICING_MANAGE), partnerPrices.rejectPartnerPrice);
+
 // Catalog & pricing
 r.get('/categories', requirePermission(P.SERVICES_MANAGE, P.DASHBOARD_VIEW), catalog.listCategories);
 r.put('/categories/:id', requirePermission(P.PRICING_MANAGE), catalog.updateCategory);
@@ -75,10 +81,11 @@ r.put('/services/:id', requirePermission(P.PRICING_MANAGE), catalog.updateServic
 r.post('/services', requirePermission(P.SERVICES_MANAGE), legacy.createService);
 r.delete('/services/:id', requirePermission(P.SERVICES_MANAGE), legacy.deleteService);
 
-// Bookings
+// Bookings (static paths before :id)
 r.get('/bookings', requirePermission(P.BOOKINGS_MANAGE), bookings.listBookings);
 r.get('/bookings/live', requirePermission(P.LIVE_MONITOR), bookings.liveBookings);
 r.get('/bookings/online-partners', requirePermission(P.BOOKINGS_REASSIGN), bookings.onlinePartnersForReassign);
+r.get('/bookings/:id', requirePermission(P.BOOKINGS_MANAGE), bookings.getBookingDetail);
 r.put('/bookings/:id/assign', requirePermission(P.BOOKINGS_MANAGE), bookings.assignPartner);
 r.post('/bookings/:bookingId/reassign', requirePermission(P.BOOKINGS_REASSIGN), bookings.reassignPartner);
 

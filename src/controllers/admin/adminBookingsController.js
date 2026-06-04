@@ -3,8 +3,9 @@ import { Booking, User, Partner, Service } from '../../models/index.js';
 import { sendOk, sendFail } from '../../utils/apiResponse.js';
 import { toNum } from '../../serializers/formatters.js';
 import { recordAdminAction } from '../../utils/auditLog.js';
+import { loadLineItemsForBookings } from '../../services/bookingLines.js';
 
-function toAdminBooking(b, user, partner) {
+function toAdminBooking(b, user, partner, lineItems = []) {
   return {
     id: b.id,
     serviceName: b.serviceName,
@@ -12,6 +13,9 @@ function toAdminBooking(b, user, partner) {
     userStatus: b.userStatus,
     partnerStatus: b.partnerStatus,
     totalAmount: toNum(b.totalAmount),
+    itemsSubtotal: b.itemsSubtotal != null ? toNum(b.itemsSubtotal) : null,
+    visitingFee: b.visitingFee != null ? toNum(b.visitingFee) : null,
+    promoDiscount: b.promoDiscount != null ? toNum(b.promoDiscount) : null,
     adminCommission: toNum(b.adminCommission),
     partnerShare: toNum(b.partnerShare),
     customerName: b.customerName,
@@ -19,7 +23,9 @@ function toAdminBooking(b, user, partner) {
     partnerId: b.partnerId,
     partnerName: b.partnerName,
     userId: b.userId,
+    distanceKm: b.distanceKm != null ? toNum(b.distanceKm) : null,
     createdAt: b.createdAt,
+    lineItems,
     user: user
       ? { id: user.id, phone: user.phone, name: [user.firstName, user.lastName].filter(Boolean).join(' ') }
       : null,
@@ -51,12 +57,28 @@ export async function listBookings(req, res, next) {
     const partners = await Partner.findAll({ where: { id: slice.map((b) => b.partnerId) } });
     const uMap = new Map(users.map((u) => [u.id, u]));
     const pMap = new Map(partners.map((x) => [x.id, x]));
+    const lineMap = await loadLineItemsForBookings(slice.map((b) => b.id));
     return sendOk(res, {
-      items: slice.map((b) => toAdminBooking(b, uMap.get(b.userId), pMap.get(b.partnerId))),
+      items: slice.map((b) =>
+        toAdminBooking(b, uMap.get(b.userId), pMap.get(b.partnerId), lineMap.get(b.id) || []),
+      ),
       total: rows.length,
       page: p,
       limit: l,
     });
+  } catch (e) {
+    next(e);
+  }
+}
+
+export async function getBookingDetail(req, res, next) {
+  try {
+    const b = await Booking.findByPk(req.params.id);
+    if (!b) return sendFail(res, 'Booking not found', 404);
+    const user = await User.findByPk(b.userId);
+    const partner = await Partner.findByPk(b.partnerId);
+    const lineMap = await loadLineItemsForBookings([b.id]);
+    return sendOk(res, toAdminBooking(b, user, partner, lineMap.get(b.id) || []));
   } catch (e) {
     next(e);
   }
