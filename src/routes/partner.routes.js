@@ -26,8 +26,10 @@ r.post('/requests/:id/cancel-fee', c.cancelActiveJobWithFee);
 r.post('/requests/:id/heavy-estimate', c.requestHeavyWorkEstimate);
 r.post('/requests/:id/decline-heavy', c.declineHeavyWorkEstimate);
 r.post('/withdraw', c.withdrawBalance);
+r.get('/pricing/limits', c.getPricingLimits);
 r.get('/pricing', c.getPricingRows);
-r.put('/pricing/:id', c.updatePricingBase);
+r.put('/pricing/:id', c.updatePricingRow);
 r.post('/pricing', c.addPricingRow);
+r.delete('/pricing/:id', c.deletePricingRow);
 
 export default r;

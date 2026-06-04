@@ -32,6 +32,8 @@ import { defineFraudFlag } from './FraudFlag.js';
 import { defineChatSetting } from './ChatSetting.js';
 import { defineStaffProfile } from './StaffProfile.js';
 import { defineStaffPayroll } from './StaffPayroll.js';
+import { defineBookingLineItem } from './BookingLineItem.js';
+import { defineVisitingChargeRule } from './VisitingChargeRule.js';
 
 export const User = defineUser(sequelize);
 export const Partner = definePartner(sequelize);
@@ -64,6 +66,8 @@ export const FraudFlag = defineFraudFlag(sequelize);
 export const ChatSetting = defineChatSetting(sequelize);
 export const StaffProfile = defineStaffProfile(sequelize);
 export const StaffPayroll = defineStaffPayroll(sequelize);
+export const BookingLineItem = defineBookingLineItem(sequelize);
+export const VisitingChargeRule = defineVisitingChargeRule(sequelize);
 
 Service.belongsTo(Category, { foreignKey: 'categoryId', as: 'category' });
 Service.belongsTo(Partner, { foreignKey: 'partnerId', as: 'partner' });
@@ -78,6 +82,8 @@ Partner.hasMany(Booking, { foreignKey: 'partnerId' });
 Booking.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 Booking.belongsTo(Partner, { foreignKey: 'partnerId', as: 'partner' });
 Booking.belongsTo(Service, { foreignKey: 'serviceId', as: 'service' });
+Booking.hasMany(BookingLineItem, { foreignKey: 'bookingId', as: 'lineItems' });
+BookingLineItem.belongsTo(Booking, { foreignKey: 'bookingId', as: 'booking' });
 
 Partner.hasMany(PartnerServicePricing, { foreignKey: 'partnerId' });
 User.hasMany(Notification, { foreignKey: 'userId' });

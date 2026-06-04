@@ -37,6 +37,8 @@ export function defineBooking(sequelize) {
       promoCode: DataTypes.STRING(32),
       amountOverride: { type: DataTypes.DECIMAL(12, 2), allowNull: true },
       serviceNameOverride: DataTypes.STRING(256),
+      itemsSubtotal: { type: DataTypes.DECIMAL(12, 2), allowNull: true },
+      promoDiscount: { type: DataTypes.DECIMAL(10, 2), allowNull: true, defaultValue: 0 },
       distanceKm: { type: DataTypes.DECIMAL(6, 2), defaultValue: 2.5 },
       /** Display label for "requested at" in partner list */
       requestedAtLabel: DataTypes.STRING(64),

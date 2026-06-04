@@ -36,6 +36,8 @@ export function definePartner(sequelize) {
       totalJobsCount: { type: DataTypes.INTEGER, defaultValue: 0 },
       completedJobsCount: { type: DataTypes.INTEGER, defaultValue: 0 },
       rewardPoints: { type: DataTypes.INTEGER, defaultValue: 0 },
+      latitude: { type: DataTypes.DECIMAL(10, 7), allowNull: true },
+      longitude: { type: DataTypes.DECIMAL(10, 7), allowNull: true },
     },
     {
       sequelize,

@@ -4,6 +4,7 @@ import * as c from '../controllers/bookingController.js';
 
 const r = Router();
 r.use(requireUser);
+r.post('/visiting-charge/quote', c.quoteVisitingChargeHandler);
 r.get('/', c.listMyBookings);
 r.get('/:id', c.getBooking);
 r.post('/', c.createBooking);

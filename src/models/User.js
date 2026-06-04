@@ -13,6 +13,8 @@ export function defineUser(sequelize) {
       rewardPoints: { type: DataTypes.INTEGER, defaultValue: 0 },
       referralCode: DataTypes.STRING(32),
       isBlocked: { type: DataTypes.BOOLEAN, defaultValue: false },
+      latitude: { type: DataTypes.DECIMAL(10, 7), allowNull: true },
+      longitude: { type: DataTypes.DECIMAL(10, 7), allowNull: true },
     },
     {
       sequelize,

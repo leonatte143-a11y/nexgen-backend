@@ -58,7 +58,7 @@ export function toCatalogService(service) {
   };
 }
 
-export function toUserBooking(b) {
+export function toUserBooking(b, lineItems = []) {
   return {
     id: b.id,
     serviceId: b.serviceId,
@@ -74,12 +74,16 @@ export function toUserBooking(b) {
     address: b.address,
     etaMins: b.etaMins ?? undefined,
     visitingFee: b.visitingFee != null ? toNum(b.visitingFee) : undefined,
+    itemsSubtotal: b.itemsSubtotal != null ? toNum(b.itemsSubtotal) : undefined,
+    promoDiscount: b.promoDiscount != null ? toNum(b.promoDiscount) : undefined,
+    distanceKm: b.distanceKm != null ? toNum(b.distanceKm) : undefined,
+    lineItems: lineItems.length ? lineItems : undefined,
     isPartnerArrived: b.isPartnerArrived || false,
     heavyWorkEstimateRequested: Boolean(b.heavyWorkEstimate),
   };
 }
 
-export function toPartnerRequest(b) {
+export function toPartnerRequest(b, lineItems = []) {
   const h = b.heavyWorkEstimate;
   return {
     id: b.id,
@@ -97,9 +101,12 @@ export function toPartnerRequest(b) {
     notes: b.notes || '',
     requestedAt: b.requestedAtLabel || timeAgoLabel(b.createdAt),
     extraServices: b.extraServices || undefined,
+    lineItems: lineItems.length ? lineItems : undefined,
+    itemsSubtotal: b.itemsSubtotal != null ? toNum(b.itemsSubtotal) : undefined,
+    visitingFee: b.visitingFee != null ? toNum(b.visitingFee) : undefined,
     pendingEstimateAmount: b.pendingEstimateAmount != null ? toNum(b.pendingEstimateAmount) : undefined,
     heavyWorkEstimate: h || undefined,
-    visitingFee: b.visitingFeePartner != null ? toNum(b.visitingFeePartner) : undefined,
+    visitingFeePartner: b.visitingFeePartner != null ? toNum(b.visitingFeePartner) : undefined,
     isPartnerArrived: b.isPartnerArrived || false,
   };
 }
