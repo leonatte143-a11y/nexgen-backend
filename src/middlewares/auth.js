@@ -48,7 +48,12 @@ export function requirePartner(req, res, next) {
 
 export function requireAdmin(req, res, next) {
   const t = bearer(req);
-  if (!t) return sendFail(res, 'Authentication required', 401);
+  if (!t) {
+    if (isDevLoggingEnabled()) {
+      devLog('AUTH', 'Admin token missing', { requestId: req.requestId, route: req.originalUrl });
+    }
+    return sendFail(res, 'Authentication required', 401);
+  }
   try {
     const payload = verifyToken(t, 'admin');
     if (payload.role !== 'admin') {

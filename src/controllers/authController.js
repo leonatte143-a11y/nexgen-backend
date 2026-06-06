@@ -5,7 +5,7 @@ import { signToken } from '../utils/jwt.js';
 import { sendOk, sendFail } from '../utils/apiResponse.js';
 import { toMockUser, toPartnerProfile } from '../serializers/mappers.js';
 import { upsertPartnerRegistration } from './partnerController.js';
-import { ctrlLog } from '../utils/devLogger.js';
+import { ctrlLog, isDevLoggingEnabled } from '../utils/devLogger.js';
 import { buildReferralCode, ensureUserReferralCode } from '../utils/referralCode.js';
 
 function normalizePhone(phone) {
@@ -269,6 +269,9 @@ export async function adminLogin(req, res, next) {
 
 export async function adminChangePassword(req, res, next) {
   try {
+    if (!req.adminId && isDevLoggingEnabled()) {
+      ctrlLog('AUTH', 'adminChangePassword called without adminId', req, { route: req.originalUrl });
+    }
     const { currentPassword, newPassword } = req.body;
     if (!newPassword || String(newPassword).length < 8) {
       return sendFail(res, 'New password must be at least 8 characters', 400);
