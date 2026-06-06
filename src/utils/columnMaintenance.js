@@ -47,6 +47,16 @@ const COLUMN_ALTERS = [
   "ALTER TABLE partners ADD COLUMN longitude DECIMAL(10,7) NULL",
   "ALTER TABLE users ADD COLUMN latitude DECIMAL(10,7) NULL",
   "ALTER TABLE users ADD COLUMN longitude DECIMAL(10,7) NULL",
+  // Category pricing controls
+  "ALTER TABLE categories ADD COLUMN icon_url VARCHAR(512) NULL",
+  "ALTER TABLE categories ADD COLUMN min_price DECIMAL(10,2) NULL",
+  "ALTER TABLE categories ADD COLUMN max_price DECIMAL(10,2) NULL",
+  "ALTER TABLE categories ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1",
+  // Admin staff accounts
+  "ALTER TABLE admin_users ADD COLUMN phone VARCHAR(16) NULL",
+  "ALTER TABLE admin_users ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1",
+  "ALTER TABLE admin_users ADD COLUMN must_reset_password TINYINT(1) NOT NULL DEFAULT 0",
+  "ALTER TABLE admin_users ADD COLUMN last_login_at DATETIME NULL",
 ];
 
 /**

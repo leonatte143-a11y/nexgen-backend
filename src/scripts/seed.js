@@ -24,12 +24,12 @@ import { runColumnEnsurePass } from '../utils/columnMaintenance.js';
 import { computeBill, DEFAULT_VISITING_FEE } from '../services/money.js';
 
 const BUCKETS = [
-  { id: 'home_services', nameEn: 'Home Services', nameTe: 'ఇంటి సేవలు', emoji: '🏠' },
-  { id: 'home_repair', nameEn: 'Home Repair', nameTe: 'ఇంటి మరమ్మతు', emoji: '🔧' },
-  { id: 'tech_supply', nameEn: 'Tech & Supply', nameTe: 'టెక్ & సరఫరా', emoji: '💻' },
-  { id: 'life_health', nameEn: 'Life & Health', nameTe: 'ఆరోగ్యం', emoji: '🩺' },
-  { id: 'professional_education', nameEn: 'Professional & Education', nameTe: 'వృత్తి & విద్య', emoji: '🎓' },
-  { id: 'events', nameEn: 'Events', nameTe: 'కార్యక్రమాలు', emoji: '🎉' },
+  { id: 'home_services', nameEn: 'Home Services', nameTe: 'ఇంటి సేవలు', emoji: '🏠', minPrice: 300, maxPrice: 2500 },
+  { id: 'home_repair', nameEn: 'Home Repair', nameTe: 'ఇంటి మరమ్మతు', emoji: '🔧', minPrice: 150, maxPrice: 1800 },
+  { id: 'tech_supply', nameEn: 'Tech & Supply', nameTe: 'టెక్ & సరఫరా', emoji: '💻', minPrice: 200, maxPrice: 2000 },
+  { id: 'life_health', nameEn: 'Life & Health', nameTe: 'ఆరోగ్యం', emoji: '🩺', minPrice: 250, maxPrice: 3000 },
+  { id: 'professional_education', nameEn: 'Professional & Education', nameTe: 'వృత్తి & విద్య', emoji: '🎓', minPrice: 200, maxPrice: 5000 },
+  { id: 'events', nameEn: 'Events', nameTe: 'కార్యక్రమాలు', emoji: '🎉', minPrice: 500, maxPrice: 15000 },
 ];
 
 async function ensureLegacyColumns() {
@@ -68,6 +68,9 @@ async function run() {
   const staffSeeds = [
     { id: 'admin_mgr', email: 'manager@nexgen.local', name: 'Ops Manager', role: 'manager', baseSalary: 25000 },
     { id: 'admin_hr', email: 'hr@nexgen.local', name: 'HR Lead', role: 'hr', baseSalary: 22000 },
+    { id: 'admin_mkt', email: 'marketing@nexgen.local', name: 'Marketing Lead', role: 'marketing', baseSalary: 20000 },
+    { id: 'admin_cs', email: 'support@nexgen.local', name: 'Client Support', role: 'client_support', baseSalary: 18000 },
+    { id: 'admin_rec', email: 'recruit@nexgen.local', name: 'Recruitment Exec', role: 'recruitment_exec', baseSalary: 16000 },
   ];
   for (const s of staffSeeds) {
     const [row] = await AdminUser.findOrCreate({
@@ -85,7 +88,13 @@ async function run() {
       defaults: {
         id: `sp_${s.id}`,
         adminUserId: row.id,
-        designation: s.role === 'manager' ? 'Manager' : 'HR',
+        designation:
+          s.role === 'manager' ? 'Manager'
+            : s.role === 'hr' ? 'HR'
+              : s.role === 'marketing' ? 'Marketing'
+                : s.role === 'client_support' ? 'Client Support'
+                  : s.role === 'recruitment_exec' ? 'Recruitment Exec'
+                    : 'Staff',
         baseSalary: s.baseSalary,
         upiId: `${s.role}@nexgen`,
       },
@@ -93,7 +102,10 @@ async function run() {
   }
 
   for (const b of BUCKETS) {
-    await Category.findOrCreate({ where: { id: b.id }, defaults: b });
+    const [cat] = await Category.findOrCreate({ where: { id: b.id }, defaults: { ...b, isActive: true } });
+    if (cat.minPrice == null && b.minPrice != null) {
+      await cat.update({ minPrice: b.minPrice, maxPrice: b.maxPrice, isActive: true });
+    }
   }
 
   const partnerId = 'partner_phani';
