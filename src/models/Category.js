@@ -8,6 +8,10 @@ export function defineCategory(sequelize) {
       nameEn: DataTypes.STRING(128),
       nameTe: DataTypes.STRING(128),
       emoji: DataTypes.STRING(8),
+      iconUrl: { type: DataTypes.STRING(512), allowNull: true },
+      minPrice: { type: DataTypes.DECIMAL(10, 2), allowNull: true },
+      maxPrice: { type: DataTypes.DECIMAL(10, 2), allowNull: true },
+      isActive: { type: DataTypes.BOOLEAN, defaultValue: true },
     },
     { sequelize, modelName: 'Category', tableName: 'categories', timestamps: true },
   );

@@ -8,7 +8,11 @@ export function defineAdminUser(sequelize) {
       email: { type: DataTypes.STRING(256), allowNull: false },
       passwordHash: { type: DataTypes.STRING(256), allowNull: false },
       name: DataTypes.STRING(128),
+      phone: { type: DataTypes.STRING(16), allowNull: true },
       role: { type: DataTypes.STRING(32), defaultValue: 'super_admin' },
+      isActive: { type: DataTypes.BOOLEAN, defaultValue: true },
+      mustResetPassword: { type: DataTypes.BOOLEAN, defaultValue: false },
+      lastLoginAt: { type: DataTypes.DATE, allowNull: true },
     },
     {
       sequelize,

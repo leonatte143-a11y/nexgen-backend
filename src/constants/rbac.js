@@ -1,5 +1,13 @@
 /** Admin staff roles (business roles — JWT audience remains `admin`). */
-export const ADMIN_ROLES = ['admin', 'super_admin', 'manager', 'hr'];
+export const ADMIN_ROLES = [
+  'admin',
+  'super_admin',
+  'manager',
+  'hr',
+  'marketing',
+  'client_support',
+  'recruitment_exec',
+];
 
 export const PERMISSIONS = {
   DASHBOARD_VIEW: 'dashboard:view',
@@ -50,14 +58,32 @@ export const ROLE_PERMISSIONS = {
     PERMISSIONS.SUPPORT_MANAGE,
     PERMISSIONS.PARTNERS_MANAGE,
     PERMISSIONS.CHAT_MONITOR,
+    PERMISSIONS.PRICING_MANAGE,
+    PERMISSIONS.SERVICES_MANAGE,
   ],
   hr: [
+    PERMISSIONS.STAFF_MANAGE,
+    PERMISSIONS.PAYROLL_VIEW,
+  ],
+  marketing: [
     PERMISSIONS.DASHBOARD_VIEW,
+    PERMISSIONS.ANALYTICS_VIEW,
+    PERMISSIONS.DEMAND_ANALYTICS,
+    PERMISSIONS.MARKETING_MANAGE,
+    PERMISSIONS.NOTIFICATIONS_BROADCAST,
+  ],
+  client_support: [
+    PERMISSIONS.DASHBOARD_VIEW,
+    PERMISSIONS.ANALYTICS_VIEW,
+    PERMISSIONS.LIVE_MONITOR,
+    PERMISSIONS.BOOKINGS_MANAGE,
+    PERMISSIONS.CHAT_MONITOR,
+    PERMISSIONS.SUPPORT_MANAGE,
+  ],
+  recruitment_exec: [
     PERMISSIONS.KYC_MANAGE,
     PERMISSIONS.PARTNERS_MANAGE,
     PERMISSIONS.PARTNERS_COMPLIANCE,
-    PERMISSIONS.ANALYTICS_VIEW,
-    PERMISSIONS.SUPPORT_MANAGE,
   ],
 };
 

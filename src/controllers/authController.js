@@ -238,24 +238,56 @@ export async function adminLogin(req, res, next) {
     if (!admin || !bcrypt.compareSync(password, admin.passwordHash)) {
       return sendFail(res, 'Invalid credentials', 401);
     }
+    if (admin.isActive === false) {
+      return sendFail(res, 'Your account has been restricted. Please contact support.', 403);
+    }
     const staffRole = admin.role || 'admin';
     const token = signToken(
       { sub: admin.id, email: admin.email, adminRole: staffRole },
       'admin',
     );
+    await admin.update({ lastLoginAt: new Date() });
     return sendOk(
       res,
       {
         token,
+        mustResetPassword: Boolean(admin.mustResetPassword),
         admin: {
           id: admin.id,
           email: admin.email,
           name: admin.name || 'NEXGEN Admin',
           role: admin.role || 'super_admin',
+          mustResetPassword: Boolean(admin.mustResetPassword),
         },
       },
       'ok',
     );
+  } catch (e) {
+    next(e);
+  }
+}
+
+export async function adminChangePassword(req, res, next) {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!newPassword || String(newPassword).length < 8) {
+      return sendFail(res, 'New password must be at least 8 characters', 400);
+    }
+    const admin = await AdminUser.findByPk(req.adminId);
+    if (!admin) return sendFail(res, 'Account not found', 404);
+    if (admin.isActive === false) {
+      return sendFail(res, 'Your account has been restricted. Please contact support.', 403);
+    }
+    if (!admin.mustResetPassword) {
+      if (!currentPassword || !bcrypt.compareSync(currentPassword, admin.passwordHash)) {
+        return sendFail(res, 'Current password is incorrect', 401);
+      }
+    }
+    await admin.update({
+      passwordHash: bcrypt.hashSync(String(newPassword), 10),
+      mustResetPassword: false,
+    });
+    return sendOk(res, { ok: true }, 'Password updated');
   } catch (e) {
     next(e);
   }

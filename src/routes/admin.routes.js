@@ -22,6 +22,7 @@ import * as analytics from '../controllers/admin/adminAnalyticsController.js';
 import * as chat from '../controllers/admin/adminChatController.js';
 import * as fraud from '../controllers/admin/adminFraudController.js';
 import * as partnerPrices from '../controllers/admin/adminPartnerPricesController.js';
+import * as staff from '../controllers/admin/adminStaffController.js';
 
 const r = Router();
 r.use(requireAdmin);
@@ -72,13 +73,18 @@ r.get('/partner-prices/pending', requirePermission(P.PRICING_MANAGE), partnerPri
 r.post('/partner-prices/:id/approve', requirePermission(P.PRICING_MANAGE), partnerPrices.approvePartnerPrice);
 r.post('/partner-prices/:id/reject', requirePermission(P.PRICING_MANAGE), partnerPrices.rejectPartnerPrice);
 
+// Staff directory
+r.get('/staff', requirePermission(P.STAFF_MANAGE, P.PAYROLL_VIEW), staff.listStaff);
+r.post('/staff', requirePermission(P.STAFF_MANAGE), staff.createStaff);
+r.put('/staff/:id', requirePermission(P.STAFF_MANAGE), staff.updateStaff);
+
 // Catalog & pricing
 r.get('/categories', requirePermission(P.SERVICES_MANAGE, P.DASHBOARD_VIEW), catalog.listCategories);
-r.put('/categories/:id', requirePermission(P.PRICING_MANAGE), catalog.updateCategory);
-r.post('/categories', requirePermission(P.SERVICES_MANAGE), legacy.createCategory);
+r.put('/categories/:id', requirePermission(P.PRICING_MANAGE, P.SERVICES_MANAGE), catalog.updateCategory);
+r.post('/categories', requirePermission(P.SERVICES_MANAGE, P.PRICING_MANAGE), catalog.createCategory);
 r.get('/services', requirePermission(P.SERVICES_MANAGE, P.DASHBOARD_VIEW), catalog.listServicesAdmin);
-r.put('/services/:id', requirePermission(P.PRICING_MANAGE), catalog.updateService);
-r.post('/services', requirePermission(P.SERVICES_MANAGE), legacy.createService);
+r.put('/services/:id', requirePermission(P.PRICING_MANAGE, P.SERVICES_MANAGE), catalog.updateService);
+r.post('/services', requirePermission(P.SERVICES_MANAGE, P.PRICING_MANAGE), catalog.createCatalogService);
 r.delete('/services/:id', requirePermission(P.SERVICES_MANAGE), legacy.deleteService);
 
 // Bookings (static paths before :id)

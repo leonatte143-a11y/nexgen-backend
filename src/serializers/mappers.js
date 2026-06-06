@@ -170,6 +170,10 @@ export function toServiceBucket(cat) {
     nameEn: cat.nameEn,
     nameTe: cat.nameTe,
     emoji: cat.emoji,
+    iconUrl: cat.iconUrl || null,
+    minPrice: cat.minPrice != null ? Number(cat.minPrice) : null,
+    maxPrice: cat.maxPrice != null ? Number(cat.maxPrice) : null,
+    isActive: cat.isActive !== false,
   };
 }
 

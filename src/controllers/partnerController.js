@@ -15,6 +15,7 @@ import { ctrlLog } from '../utils/devLogger.js';
 import {
   evaluatePartnerPrice,
   getPartnerPriceLimits,
+  getPartnerPriceLimitsPayload,
   mapPricingRow,
 } from '../services/partnerPricing.js';
 import { loadLineItemsForBookings } from '../services/bookingLines.js';
@@ -387,7 +388,10 @@ export async function updateProfile(req, res, next) {
 
 export async function getPricingLimits(req, res, next) {
   try {
-    const limits = await getPartnerPriceLimits();
+    const category = req.query.category;
+    const limits = category
+      ? await getPartnerPriceLimits(category)
+      : await getPartnerPriceLimitsPayload();
     return sendOk(res, limits);
   } catch (e) {
     next(e);
@@ -412,11 +416,11 @@ export async function getPricingRows(req, res, next) {
 
 export async function updatePricingRow(req, res, next) {
   try {
-    const limits = await getPartnerPriceLimits();
     const row = await PartnerServicePricing.findOne({
       where: { id: req.params.id, partnerId: req.partnerId },
     });
     if (!row) return sendFail(res, 'Not found', 404);
+    const limits = await getPartnerPriceLimits(row.category);
 
     const updates = {};
     if (req.body.serviceName !== undefined) {
@@ -427,9 +431,11 @@ export async function updatePricingRow(req, res, next) {
     if (req.body.category !== undefined) {
       updates.category = String(req.body.category).trim();
     }
+    const limitCategory = updates.category ?? row.category;
+    const rowLimits = await getPartnerPriceLimits(limitCategory);
     if (req.body.baseCost !== undefined) {
       const newPrice = Math.round(Number(req.body.baseCost));
-      const evalResult = evaluatePartnerPrice(newPrice, limits);
+      const evalResult = evaluatePartnerPrice(newPrice, rowLimits);
       if (newPrice !== toNum(row.baseCost)) {
         updates.previousBaseCost = toNum(row.baseCost);
       }
@@ -452,10 +458,10 @@ export async function updatePricingRow(req, res, next) {
     await row.update(updates);
     await row.reload();
 
-    const payload = mapPricingRow(row, limits);
+    const payload = mapPricingRow(row, rowLimits);
     const message =
       row.approvalStatus === 'pending_review'
-        ? `Price submitted for admin review (allowed range ₹${limits.min}–₹${limits.max}).`
+        ? `Price submitted for admin review (allowed range ₹${rowLimits.min}–₹${rowLimits.max}).`
         : 'Service updated';
 
     return sendOk(res, { ...payload, items: (await listPricingItems(req.partnerId, limits)) }, message);
@@ -471,9 +477,9 @@ export async function updatePricingBase(req, res, next) {
 
 export async function addPricingRow(req, res, next) {
   try {
-    const limits = await getPartnerPriceLimits();
     const { serviceName, category, baseCost } = req.body;
     if (!serviceName?.trim()) return sendFail(res, 'serviceName required', 400);
+    const limits = await getPartnerPriceLimits(category);
     const price = Math.round(Number(baseCost));
     const evalResult = evaluatePartnerPrice(price, limits);
     if (!price) return sendFail(res, 'baseCost required', 400);
