@@ -59,6 +59,21 @@ const COLUMN_ALTERS = [
   "ALTER TABLE admin_users ADD COLUMN last_login_at DATETIME NULL",
 ];
 
+const CREATE_TABLES = [
+  `CREATE TABLE IF NOT EXISTS emergency_requests (
+    id VARCHAR(64) PRIMARY KEY,
+    user_id VARCHAR(64) NOT NULL,
+    user_phone VARCHAR(16) NULL,
+    latitude DECIMAL(10,7) NULL,
+    longitude DECIMAL(10,7) NULL,
+    status VARCHAR(32) NOT NULL DEFAULT 'open',
+    dispatch_phone VARCHAR(16) NULL,
+    notes TEXT NULL,
+    created_at DATETIME NULL,
+    updated_at DATETIME NULL
+  )`,
+];
+
 /**
  * @param {import('sequelize').Sequelize} sequelize
  * @returns {Promise<{ added: number; skipped: number }>}
@@ -70,6 +85,14 @@ export async function runColumnEnsurePass(sequelize) {
     const ok = await addColumnIfMissing(sequelize, sql);
     if (ok) added += 1;
     else skipped += 1;
+  }
+  for (const sql of CREATE_TABLES) {
+    try {
+      await sequelize.query(sql);
+      added += 1;
+    } catch {
+      skipped += 1;
+    }
   }
   return { added, skipped };
 }

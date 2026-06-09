@@ -16,11 +16,29 @@ export async function getMe(req, res, next) {
   }
 }
 
+export async function deleteMe(req, res, next) {
+  try {
+    const user = await User.findByPk(req.userId);
+    if (!user) return sendFail(res, 'User not found', 404);
+    await user.update({
+      isBlocked: true,
+      firstName: 'Deleted',
+      lastName: 'User',
+      email: '',
+      address: '',
+    });
+    ctrlLog('PROFILE', 'Account deleted (soft)', req);
+    return sendOk(res, { ok: true }, 'Account deleted');
+  } catch (e) {
+    next(e);
+  }
+}
+
 export async function updateMe(req, res, next) {
   try {
     const user = await User.findByPk(req.userId);
     if (!user) return sendFail(res, 'User not found', 404);
-    const { firstName, lastName, email, address, rewardPoints, referralCode, phone } = req.body;
+    const { firstName, lastName, email, address, rewardPoints, referralCode, phone, latitude, longitude } = req.body;
     await user.update({
       ...(firstName !== undefined && { firstName }),
       ...(lastName !== undefined && { lastName }),
@@ -29,6 +47,8 @@ export async function updateMe(req, res, next) {
       ...(rewardPoints !== undefined && { rewardPoints }),
       ...(referralCode !== undefined && { referralCode }),
       ...(phone !== undefined && { phone: String(phone).replace(/\D/g, '').slice(0, 10) }),
+      ...(latitude !== undefined && { latitude }),
+      ...(longitude !== undefined && { longitude }),
     });
     ctrlLog('PROFILE', 'Profile updated', req, { fields: Object.keys(req.body || {}) });
     return sendOk(res, toMockUser(user), 'Profile updated');
