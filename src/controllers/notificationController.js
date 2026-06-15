@@ -24,3 +24,14 @@ export async function markAllRead(req, res, next) {
     next(e);
   }
 }
+
+export async function markOneRead(req, res, next) {
+  try {
+    const row = await Notification.findOne({ where: { id: req.params.id, userId: req.userId } });
+    if (!row) return sendFail(res, 'Notification not found', 404);
+    if (!row.read) await row.update({ read: true });
+    return sendOk(res, toAppNotification(row));
+  } catch (e) {
+    next(e);
+  }
+}

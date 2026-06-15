@@ -27,6 +27,22 @@ export function requireUser(req, res, next) {
   }
 }
 
+/** Attach userId when a valid user token is present; otherwise continue anonymously. */
+export function optionalUser(req, res, next) {
+  const t = bearer(req);
+  if (!t) return next();
+  try {
+    const payload = verifyToken(t, 'user');
+    if (payload.role === 'user') {
+      req.userId = payload.sub;
+      req.userPhone = payload.phone;
+    }
+  } catch {
+    /* ignore invalid token for optional auth */
+  }
+  next();
+}
+
 export function requirePartner(req, res, next) {
   const t = bearer(req);
   if (!t) return sendFail(res, 'Authentication required', 401);

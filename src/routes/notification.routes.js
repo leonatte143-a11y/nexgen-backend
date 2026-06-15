@@ -6,5 +6,6 @@ const r = Router();
 r.use(requireUser);
 r.get('/', c.listForUser);
 r.post('/read-all', c.markAllRead);
+r.post('/:id/read', c.markOneRead);
 
 export default r;

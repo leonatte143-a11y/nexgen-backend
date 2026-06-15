@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto';
 import { Op } from 'sequelize';
 import { Partner, PayoutQueue, Settlement } from '../../models/index.js';
-import { sendOk } from '../../utils/apiResponse.js';
+import { sendOk, sendFail } from '../../utils/apiResponse.js';
 import { toNum } from '../../serializers/formatters.js';
 import { recordAdminAction } from '../../utils/auditLog.js';
 import { getSettings } from '../../services/appSettingsService.js';
@@ -15,6 +15,7 @@ export async function payoutQueue(_req, res, next) {
       order: [['walletBalance', 'DESC']],
     });
     const queued = await PayoutQueue.findAll({ where: { status: 'queued' }, order: [['createdAt', 'DESC']] });
+    const pending = await PayoutQueue.findAll({ where: { status: 'pending' }, order: [['createdAt', 'DESC']] });
     return sendOk(res, {
       threshold,
       partners: partners.map((p) => ({
@@ -26,6 +27,7 @@ export async function payoutQueue(_req, res, next) {
         eligible: true,
       })),
       queue: queued,
+      pendingRequests: pending,
     });
   } catch (e) {
     next(e);
@@ -94,6 +96,44 @@ export async function commissionReport(_req, res, next) {
       settlementsCount: settlements.length,
       invoicePlaceholder: true,
     });
+  } catch (e) {
+    next(e);
+  }
+}
+
+export async function approvePayoutRequest(req, res, next) {
+  try {
+    const row = await PayoutQueue.findByPk(req.params.id);
+    if (!row) return sendFail(res, 'Payout not found', 404);
+    if (row.status !== 'pending') return sendFail(res, 'Only pending partner withdrawals can be approved', 400);
+    await row.update({ status: 'paid' });
+    await Settlement.create({
+      id: `st_${randomUUID().slice(0, 10)}`,
+      partnerId: row.partnerId,
+      amount: toNum(row.amount),
+      commissionAmount: 0,
+      status: 'paid',
+      periodEnd: new Date(),
+    });
+    await recordAdminAction(req.adminId, 'payout_approve', { meta: { payoutId: row.id, amount: row.amount } });
+    return sendOk(res, row, 'Withdrawal approved and marked paid');
+  } catch (e) {
+    next(e);
+  }
+}
+
+export async function rejectPayoutRequest(req, res, next) {
+  try {
+    const row = await PayoutQueue.findByPk(req.params.id);
+    if (!row) return sendFail(res, 'Payout not found', 404);
+    if (row.status !== 'pending') return sendFail(res, 'Only pending partner withdrawals can be rejected', 400);
+    const p = await Partner.findByPk(row.partnerId);
+    if (p) {
+      await p.update({ walletBalance: toNum(p.walletBalance) + toNum(row.amount) });
+    }
+    await row.update({ status: 'rejected' });
+    await recordAdminAction(req.adminId, 'payout_reject', { meta: { payoutId: row.id, amount: row.amount } });
+    return sendOk(res, row, 'Withdrawal rejected — amount returned to partner wallet');
   } catch (e) {
     next(e);
   }
