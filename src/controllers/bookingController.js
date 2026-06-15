@@ -29,7 +29,10 @@ function cityFromAddress(address, partner) {
 
 async function bookingWithLineItems(booking) {
   const map = await loadLineItemsForBookings([booking.id]);
-  return toUserBooking(booking, map.get(booking.id) || []);
+  const partner = await Partner.findByPk(booking.partnerId);
+  const payload = toUserBooking(booking, map.get(booking.id) || []);
+  if (partner?.phone) payload.partnerPhone = partner.phone;
+  return payload;
 }
 
 export async function quoteVisitingChargeHandler(req, res, next) {
@@ -205,6 +208,7 @@ export async function createBooking(req, res, next) {
       adminCommission: bill.adminComm,
       partnerShare,
       startOtp: genOtp(),
+      endOtp: genOtp(),
       scheduledAt: scheduled,
       scheduledAtIso: new Date(),
       etaMins: 12,

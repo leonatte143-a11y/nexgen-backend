@@ -23,6 +23,7 @@ import * as chat from '../controllers/admin/adminChatController.js';
 import * as fraud from '../controllers/admin/adminFraudController.js';
 import * as partnerPrices from '../controllers/admin/adminPartnerPricesController.js';
 import * as staff from '../controllers/admin/adminStaffController.js';
+import * as shops from '../controllers/admin/adminShopsController.js';
 
 const r = Router();
 r.use(requireAdmin);
@@ -114,6 +115,8 @@ r.get('/payouts/queue', requirePermission(P.PAYOUTS_MANAGE), payouts.payoutQueue
 r.post('/payouts/generate', requirePermission(P.PAYOUTS_MANAGE), payouts.generatePayoutFile);
 r.get('/payouts/history', requirePermission(P.PAYOUTS_MANAGE), payouts.settlementHistory);
 r.get('/payouts/commission-report', requirePermission(P.PAYOUTS_MANAGE), payouts.commissionReport);
+r.post('/payouts/:id/approve', requirePermission(P.PAYOUTS_MANAGE), payouts.approvePayoutRequest);
+r.post('/payouts/:id/reject', requirePermission(P.PAYOUTS_MANAGE), payouts.rejectPayoutRequest);
 r.get('/finance/payouts', requirePermission(P.PAYOUTS_MANAGE), finance.listFinancePayouts);
 r.post('/finance/payouts/generate', requirePermission(P.PAYOUTS_MANAGE), finance.generateFinancePayout);
 r.post('/finance/payouts/:id/mark-paid', requirePermission(P.PAYOUTS_MANAGE), finance.markPayoutPaid);
@@ -155,5 +158,16 @@ r.get('/banners', requirePermission(P.MARKETING_MANAGE), banner.adminListBanners
 r.post('/banners', requirePermission(P.MARKETING_MANAGE), banner.adminCreateBanner);
 r.put('/banners/:id', requirePermission(P.MARKETING_MANAGE), banner.adminUpdateBanner);
 r.delete('/banners/:id', requirePermission(P.MARKETING_MANAGE), banner.adminDeleteBanner);
+
+// Shops & marketplace
+r.get('/shops/pending', requirePermission(P.SHOPS_VERIFY, P.SHOPS_MANAGE), shops.listPending);
+r.get('/shops/leads', requirePermission(P.SHOPS_VERIFY, P.SHOPS_MANAGE), shops.leadStats);
+r.get('/shops', requirePermission(P.SHOPS_VERIFY, P.SHOPS_MANAGE), shops.listShops);
+r.post('/shops/:id/approve', requirePermission(P.SHOPS_VERIFY, P.SHOPS_MANAGE), shops.approveShop);
+r.post('/shops/:id/reject', requirePermission(P.SHOPS_VERIFY, P.SHOPS_MANAGE), shops.rejectShop);
+r.post('/shops/:id/featured', requirePermission(P.SHOPS_MANAGE), shops.setFeatured);
+r.get('/shop-categories', requirePermission(P.SHOPS_VERIFY, P.SHOPS_MANAGE), shops.listCategories);
+r.post('/shop-categories', requirePermission(P.SHOPS_MANAGE), shops.createCategory);
+r.put('/shop-categories/:id', requirePermission(P.SHOPS_MANAGE), shops.updateCategory);
 
 export default r;

@@ -57,6 +57,7 @@ const COLUMN_ALTERS = [
   "ALTER TABLE admin_users ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1",
   "ALTER TABLE admin_users ADD COLUMN must_reset_password TINYINT(1) NOT NULL DEFAULT 0",
   "ALTER TABLE admin_users ADD COLUMN last_login_at DATETIME NULL",
+  "ALTER TABLE bookings ADD COLUMN end_otp VARCHAR(8) NULL",
 ];
 
 const CREATE_TABLES = [
@@ -69,6 +70,38 @@ const CREATE_TABLES = [
     status VARCHAR(32) NOT NULL DEFAULT 'open',
     dispatch_phone VARCHAR(16) NULL,
     notes TEXT NULL,
+    created_at DATETIME NULL,
+    updated_at DATETIME NULL
+  )`,
+  `CREATE TABLE IF NOT EXISTS shop_categories (
+    id VARCHAR(64) PRIMARY KEY,
+    name VARCHAR(128) NOT NULL,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    created_at DATETIME NULL,
+    updated_at DATETIME NULL
+  )`,
+  `CREATE TABLE IF NOT EXISTS shops (
+    id VARCHAR(64) PRIMARY KEY,
+    shop_name VARCHAR(256) NOT NULL,
+    owner_name VARCHAR(256) NULL,
+    category_id VARCHAR(64) NOT NULL,
+    phone VARCHAR(16) NULL,
+    address TEXT NULL,
+    city VARCHAR(64) NULL,
+    latitude DECIMAL(10,7) NULL,
+    longitude DECIMAL(10,7) NULL,
+    gst_or_license VARCHAR(128) NULL,
+    lead_preference VARCHAR(32) DEFAULT 'offline',
+    photo_url VARCHAR(512) NULL,
+    rating DECIMAL(3,2) DEFAULT 4.50,
+    verification_status VARCHAR(32) DEFAULT 'pending',
+    is_featured TINYINT(1) NOT NULL DEFAULT 0,
+    is_active TINYINT(1) NOT NULL DEFAULT 0,
+    call_count INT NOT NULL DEFAULT 0,
+    directions_count INT NOT NULL DEFAULT 0,
+    referral_count INT NOT NULL DEFAULT 0,
+    click_count INT NOT NULL DEFAULT 0,
+    search_keywords TEXT NULL,
     created_at DATETIME NULL,
     updated_at DATETIME NULL
   )`,

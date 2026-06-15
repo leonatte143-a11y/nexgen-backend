@@ -35,6 +35,8 @@ import { defineStaffPayroll } from './StaffPayroll.js';
 import { defineBookingLineItem } from './BookingLineItem.js';
 import { defineVisitingChargeRule } from './VisitingChargeRule.js';
 import { defineEmergencyRequest } from './EmergencyRequest.js';
+import { defineShopCategory } from './ShopCategory.js';
+import { defineShop } from './Shop.js';
 
 export const User = defineUser(sequelize);
 export const Partner = definePartner(sequelize);
@@ -70,6 +72,8 @@ export const StaffPayroll = defineStaffPayroll(sequelize);
 export const BookingLineItem = defineBookingLineItem(sequelize);
 export const VisitingChargeRule = defineVisitingChargeRule(sequelize);
 export const EmergencyRequest = defineEmergencyRequest(sequelize);
+export const ShopCategory = defineShopCategory(sequelize);
+export const Shop = defineShop(sequelize);
 
 Service.belongsTo(Category, { foreignKey: 'categoryId', as: 'category' });
 Service.belongsTo(Partner, { foreignKey: 'partnerId', as: 'partner' });
@@ -102,6 +106,9 @@ User.hasMany(Favorite, { foreignKey: 'userId' });
 Partner.hasMany(Favorite, { foreignKey: 'partnerId' });
 Favorite.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 Favorite.belongsTo(Partner, { foreignKey: 'partnerId', as: 'partner' });
+
+Shop.belongsTo(ShopCategory, { foreignKey: 'categoryId', as: 'category' });
+ShopCategory.hasMany(Shop, { foreignKey: 'categoryId', as: 'shops' });
 
 export async function connectDatabase({ sync = false, force = false, alter = false } = {}) {
   await sequelize.authenticate();

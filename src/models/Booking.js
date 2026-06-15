@@ -25,6 +25,7 @@ export function defineBooking(sequelize) {
       adminCommission: { type: DataTypes.DECIMAL(10, 2) },
       partnerShare: { type: DataTypes.DECIMAL(12, 2) },
       startOtp: DataTypes.STRING(8),
+      endOtp: DataTypes.STRING(8),
       scheduledAt: DataTypes.STRING(64),
       scheduledAtIso: DataTypes.DATE,
       etaMins: DataTypes.INTEGER,

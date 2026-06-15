@@ -34,6 +34,8 @@ export const PERMISSIONS = {
   PAYROLL_VIEW: 'payroll:view',
   CHAT_MONITOR: 'chat:monitor',
   FRAUD_VIEW: 'fraud:view',
+  SHOPS_MANAGE: 'shops:manage',
+  SHOPS_VERIFY: 'shops:verify',
 };
 
 /** Maps legacy super_admin → admin privileges. */
@@ -60,6 +62,7 @@ export const ROLE_PERMISSIONS = {
     PERMISSIONS.CHAT_MONITOR,
     PERMISSIONS.PRICING_MANAGE,
     PERMISSIONS.SERVICES_MANAGE,
+    PERMISSIONS.SHOPS_VERIFY,
   ],
   hr: [
     PERMISSIONS.STAFF_MANAGE,

@@ -1,5 +1,5 @@
-import { randomInt } from 'crypto';
-import { Partner, Booking, PartnerServicePricing } from '../models/index.js';
+import { randomInt, randomUUID } from 'crypto';
+import { Partner, Booking, PartnerServicePricing, User, PayoutQueue } from '../models/index.js';
 import { sendOk, sendFail } from '../utils/apiResponse.js';
 import {
   toPartnerProfile,
@@ -162,6 +162,9 @@ export async function getRequests(req, res, next) {
       order: [['createdAt', 'DESC']],
     });
     const lineMap = await loadLineItemsForBookings(rows.map((b) => b.id));
+    const userIds = [...new Set(rows.map((b) => b.userId))];
+    const users = userIds.length ? await User.findAll({ where: { id: userIds } }) : [];
+    const phoneByUser = new Map(users.map((u) => [u.id, u.phone]));
     ctrlLog('PARTNER', 'getRequests', req, { count: rows.length });
     return sendOk(
       res,
@@ -171,6 +174,7 @@ export async function getRequests(req, res, next) {
           {
             ...plain,
             requestedAtLabel: timeAgoLabel(b.createdAt),
+            customerPhone: phoneByUser.get(b.userId) || null,
           },
           lineMap.get(b.id) || [],
         );
@@ -234,6 +238,8 @@ export async function startJob(req, res, next) {
   try {
     const b = await bookingForPartner(req);
     if (!b || b.partnerStatus !== 'pending') return sendFail(res, 'Invalid state', 400);
+    const otp = String(req.body?.otp || req.body?.startOtp || '').trim();
+    if (!otp || otp !== String(b.startOtp)) return sendFail(res, 'Invalid start OTP', 400);
     b.partnerStatus = 'in_progress';
     b.userStatus = 'in_progress';
     await b.save();
@@ -247,6 +253,8 @@ export async function completeJob(req, res, next) {
   try {
     const b = await bookingForPartner(req);
     if (!b || b.partnerStatus !== 'in_progress') return sendFail(res, 'Invalid state', 400);
+    const otp = String(req.body?.otp || req.body?.endOtp || '').trim();
+    if (!otp || otp !== String(b.endOtp)) return sendFail(res, 'Invalid completion OTP', 400);
     b.partnerStatus = 'completed';
     b.userStatus = 'completed';
     const share = toNum(b.partnerShare);
@@ -350,8 +358,24 @@ export async function withdrawBalance(req, res, next) {
   try {
     const p = await Partner.findByPk(req.partnerId);
     if (!p) return sendFail(res, 'Not found', 404);
+    const balance = toNum(p.walletBalance);
+    if (balance <= 0) return sendFail(res, 'No balance available to withdraw', 400);
+    const pending = await PayoutQueue.findOne({
+      where: { partnerId: p.id, status: 'pending' },
+    });
+    if (pending) return sendFail(res, 'A withdrawal request is already pending admin approval', 400);
+    const id = `pq_${randomUUID().slice(0, 10)}`;
+    await PayoutQueue.create({
+      id,
+      partnerId: p.id,
+      amount: balance,
+      bankName: p.bankName,
+      bankAccount: p.bankAccount,
+      status: 'pending',
+      weekLabel: `withdraw_${new Date().toISOString().slice(0, 10)}`,
+    });
     await p.update({ walletBalance: 0 });
-    return sendOk(res, toEarningsSummary(await p.reload()));
+    return sendOk(res, toEarningsSummary(await p.reload()), 'Withdrawal submitted for admin approval');
   } catch (e) {
     next(e);
   }

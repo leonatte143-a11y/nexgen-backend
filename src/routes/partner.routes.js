@@ -3,6 +3,7 @@ import { requirePartner } from '../middlewares/auth.js';
 import { requireUser } from '../middlewares/auth.js';
 import * as c from '../controllers/partnerController.js';
 import * as emergency from '../controllers/emergencyController.js';
+import * as shopC from '../controllers/shopController.js';
 import { listPartnerReviews } from '../controllers/reviewController.js';
 import { listPartnerTestimonials } from '../controllers/testimonialController.js';
 
@@ -28,6 +29,7 @@ r.post('/requests/:id/heavy-estimate', c.requestHeavyWorkEstimate);
 r.post('/requests/:id/decline-heavy', c.declineHeavyWorkEstimate);
 r.post('/withdraw', c.withdrawBalance);
 r.get('/emergency/active', emergency.listPartnerEmergencies);
+r.get('/shops/nearby', shopC.listNearbyForPartner);
 r.get('/pricing/limits', c.getPricingLimits);
 r.get('/pricing', c.getPricingRows);
 r.put('/pricing/:id', c.updatePricingRow);

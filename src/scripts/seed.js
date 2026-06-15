@@ -17,7 +17,8 @@ import {
   Coupon,
   AppSetting,
   GeoZone,
-  StaffProfile,
+  Shop,
+  ShopCategory,
 } from '../models/index.js';
 import { syncDatabase, sequelize } from '../models/index.js';
 import { runColumnEnsurePass } from '../utils/columnMaintenance.js';
@@ -396,6 +397,110 @@ async function run() {
       active: true,
     },
   });
+
+  const SHOP_CATS = [
+    { id: 'hardware', name: 'Hardware' },
+    { id: 'electrical', name: 'Electrical' },
+    { id: 'plumbing', name: 'Plumbing' },
+    { id: 'construction', name: 'Construction' },
+    { id: 'electronics', name: 'Electronics' },
+    { id: 'sanitary', name: 'Sanitary' },
+    { id: 'plywood', name: 'Plywood & Timber' },
+  ];
+  for (const cat of SHOP_CATS) {
+    await ShopCategory.findOrCreate({ where: { id: cat.id }, defaults: { ...cat, isActive: true } });
+  }
+
+  const SAMPLE_SHOPS = [
+    {
+      id: 'shop_asian_paints',
+      shopName: 'Asian Paints Dealer — Danavaipeta',
+      ownerName: 'Ravi Kumar',
+      categoryId: 'hardware',
+      phone: '9876543210',
+      address: 'Danavaipeta Main Road, Rajahmundry',
+      city: 'Rajahmundry',
+      latitude: 16.992,
+      longitude: 81.775,
+      gstOrLicense: 'GST29ABCDE1234F1Z5',
+      isFeatured: true,
+      rating: 4.8,
+    },
+    {
+      id: 'shop_sri_electrical',
+      shopName: 'Sri Electrical & Cables',
+      ownerName: 'Phani Stores',
+      categoryId: 'electrical',
+      phone: '9876543211',
+      address: 'Kambala Cheruvu, Rajahmundry',
+      city: 'Rajahmundry',
+      latitude: 16.988,
+      longitude: 81.768,
+      isFeatured: true,
+      rating: 4.6,
+    },
+    {
+      id: 'shop_guntur_hardware',
+      shopName: 'Guntur Mega Hardware',
+      ownerName: 'Suresh',
+      categoryId: 'hardware',
+      phone: '9876543212',
+      address: 'Arundelpet, Guntur',
+      city: 'Guntur',
+      latitude: 16.308,
+      longitude: 80.438,
+      isFeatured: true,
+      rating: 4.5,
+    },
+    {
+      id: 'shop_pvc_pipes',
+      shopName: 'PVC & Pipes Mart',
+      ownerName: 'Lakshmi',
+      categoryId: 'plumbing',
+      phone: '9876543213',
+      address: 'Morampudi, Rajahmundry',
+      city: 'Rajahmundry',
+      latitude: 16.985,
+      longitude: 81.782,
+      rating: 4.4,
+    },
+    {
+      id: 'shop_tiles_world',
+      shopName: 'Tiles World',
+      ownerName: 'Venkat',
+      categoryId: 'construction',
+      phone: '9876543214',
+      address: 'Aryapuram, Rajahmundry',
+      city: 'Rajahmundry',
+      latitude: 16.995,
+      longitude: 81.77,
+      rating: 4.7,
+    },
+    {
+      id: 'shop_cctv_hub',
+      shopName: 'CCTV & Electronics Hub',
+      ownerName: 'Kiran',
+      categoryId: 'electronics',
+      phone: '9876543215',
+      address: 'Lalacheruvu, Rajahmundry',
+      city: 'Rajahmundry',
+      latitude: 16.98,
+      longitude: 81.76,
+      rating: 4.3,
+    },
+  ];
+  for (const s of SAMPLE_SHOPS) {
+    await Shop.findOrCreate({
+      where: { id: s.id },
+      defaults: {
+        ...s,
+        leadPreference: 'offline',
+        verificationStatus: 'verified',
+        isActive: true,
+        searchKeywords: `${s.shopName} ${s.categoryId} paints cables pipes tiles`.toLowerCase(),
+      },
+    });
+  }
 
   console.log('Seed complete.');
   console.log('  Admin:', adminEmail, '/', adminPass);
