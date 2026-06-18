@@ -1,4 +1,5 @@
 import { randomUUID } from 'crypto';
+import { Op } from 'sequelize';
 import { Category, Service, Partner } from '../../models/index.js';
 import { sendOk, sendFail } from '../../utils/apiResponse.js';
 import { toCatalogService, toServiceBucket } from '../../serializers/mappers.js';
@@ -78,6 +79,28 @@ export async function updateCategory(req, res, next) {
     });
     await recordAdminAction(req.adminId, 'category_update', { entityType: 'category', entityId: c.id, req });
     return sendOk(res, toServiceBucket(c));
+  } catch (e) {
+    next(e);
+  }
+}
+
+export async function deleteCategory(req, res, next) {
+  try {
+    const c = await Category.findByPk(req.params.id);
+    if (!c) return sendFail(res, 'Category not found', 404);
+    const activeCount = await Service.count({
+      where: { categoryId: c.id, isActive: { [Op.ne]: false } },
+    });
+    if (activeCount > 0) {
+      return sendFail(
+        res,
+        `Cannot delete category with ${activeCount} active service(s). Remove or reassign them first.`,
+        409,
+      );
+    }
+    await c.update({ isActive: false });
+    await recordAdminAction(req.adminId, 'category_delete', { entityType: 'category', entityId: c.id, req });
+    return sendOk(res, { id: c.id, deleted: true }, 'Category deleted');
   } catch (e) {
     next(e);
   }

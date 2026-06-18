@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import { Op } from 'sequelize';
-import { Notification, User } from '../../models/index.js';
+import { Notification, User, NotificationCampaign } from '../../models/index.js';
 import { sendOk, sendFail } from '../../utils/apiResponse.js';
 import { recordAdminAction } from '../../utils/auditLog.js';
 
@@ -22,6 +22,20 @@ export async function broadcast(req, res, next) {
       });
       count += 1;
     }
+
+    const isLiveType = ['alert', 'order', 'health', 'live'].includes(String(type).toLowerCase());
+    await NotificationCampaign.create({
+      id: `nc_${randomUUID().slice(0, 10)}`,
+      title,
+      body: city ? `${body} (${city})` : body,
+      type: isLiveType ? 'live' : 'offer',
+      city: city || null,
+      totalSent: count,
+      deliveredCount: count,
+      isActive: isLiveType,
+      createdBy: req.adminId || null,
+    });
+
     await recordAdminAction(req.adminId, 'notification_broadcast', { meta: { count, city } });
     return sendOk(res, { sent: count }, 'Broadcast sent');
   } catch (e) {
@@ -68,6 +82,43 @@ export async function listNotificationsAdmin(req, res, next) {
     const limit = Math.min(100, parseInt(req.query.limit, 10) || 50);
     const rows = await Notification.findAll({ order: [['createdAt', 'DESC']], limit });
     return sendOk(res, rows);
+  } catch (e) {
+    next(e);
+  }
+}
+
+export async function listNotificationCampaigns(_req, res, next) {
+  try {
+    const rows = await NotificationCampaign.findAll({
+      order: [['createdAt', 'DESC']],
+      limit: 100,
+    });
+    return sendOk(
+      res,
+      rows.map((r) => ({
+        id: r.id,
+        title: r.title,
+        body: r.body,
+        type: r.type,
+        city: r.city,
+        totalSent: r.totalSent,
+        delivered: r.deliveredCount,
+        isActive: r.isActive,
+        statusLabel: r.isActive ? 'Live' : 'Sent',
+        createdAt: r.createdAt,
+      })),
+    );
+  } catch (e) {
+    next(e);
+  }
+}
+
+export async function deactivateCampaign(req, res, next) {
+  try {
+    const row = await NotificationCampaign.findByPk(req.params.id);
+    if (!row) return sendFail(res, 'Campaign not found', 404);
+    await row.update({ isActive: false });
+    return sendOk(res, { id: row.id, isActive: false }, 'Campaign deactivated');
   } catch (e) {
     next(e);
   }

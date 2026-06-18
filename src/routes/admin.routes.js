@@ -83,6 +83,7 @@ r.put('/staff/:id', requirePermission(P.STAFF_MANAGE), staff.updateStaff);
 r.get('/categories', requirePermission(P.SERVICES_MANAGE, P.DASHBOARD_VIEW), catalog.listCategories);
 r.put('/categories/:id', requirePermission(P.PRICING_MANAGE, P.SERVICES_MANAGE), catalog.updateCategory);
 r.post('/categories', requirePermission(P.SERVICES_MANAGE, P.PRICING_MANAGE), catalog.createCategory);
+r.delete('/categories/:id', requirePermission(P.PRICING_MANAGE, P.SERVICES_MANAGE), catalog.deleteCategory);
 r.get('/services', requirePermission(P.SERVICES_MANAGE, P.DASHBOARD_VIEW), catalog.listServicesAdmin);
 r.put('/services/:id', requirePermission(P.PRICING_MANAGE, P.SERVICES_MANAGE), catalog.updateService);
 r.post('/services', requirePermission(P.SERVICES_MANAGE, P.PRICING_MANAGE), catalog.createCatalogService);
@@ -133,6 +134,8 @@ r.get('/referrals', requirePermission(P.MARKETING_MANAGE), coupons.listReferrals
 r.post('/notifications/targeted', requirePermission(P.MARKETING_MANAGE), notifications.targetedNotification);
 
 // Notifications
+r.get('/notifications/campaigns', requirePermission(P.NOTIFICATIONS_BROADCAST), notifications.listNotificationCampaigns);
+r.post('/notifications/campaigns/:id/deactivate', requirePermission(P.NOTIFICATIONS_BROADCAST), notifications.deactivateCampaign);
 r.get('/notifications', requirePermission(P.NOTIFICATIONS_BROADCAST), notifications.listNotificationsAdmin);
 r.post('/notifications/broadcast', requirePermission(P.NOTIFICATIONS_BROADCAST), notifications.broadcast);
 

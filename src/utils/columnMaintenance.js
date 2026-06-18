@@ -58,6 +58,12 @@ const COLUMN_ALTERS = [
   "ALTER TABLE admin_users ADD COLUMN must_reset_password TINYINT(1) NOT NULL DEFAULT 0",
   "ALTER TABLE admin_users ADD COLUMN last_login_at DATETIME NULL",
   "ALTER TABLE bookings ADD COLUMN end_otp VARCHAR(8) NULL",
+  "ALTER TABLE bookings ADD COLUMN custom_requirements TEXT NULL",
+  "ALTER TABLE bookings ADD COLUMN payment_status VARCHAR(32) NOT NULL DEFAULT 'pending'",
+  "ALTER TABLE bookings ADD COLUMN work_done_requested TINYINT(1) NOT NULL DEFAULT 0",
+  "ALTER TABLE search_logs ADD COLUMN source VARCHAR(32) NOT NULL DEFAULT 'search'",
+  "ALTER TABLE search_logs ADD COLUMN detail_text TEXT NULL",
+  "ALTER TABLE advertisement_banners ADD COLUMN media_type VARCHAR(16) NOT NULL DEFAULT 'image'",
 ];
 
 const CREATE_TABLES = [
@@ -77,6 +83,14 @@ const CREATE_TABLES = [
     id VARCHAR(64) PRIMARY KEY,
     name VARCHAR(128) NOT NULL,
     is_active TINYINT(1) NOT NULL DEFAULT 1,
+    created_at DATETIME NULL,
+    updated_at DATETIME NULL
+  )`,
+  `CREATE TABLE IF NOT EXISTS trending_categories (
+    id VARCHAR(64) PRIMARY KEY,
+    name VARCHAR(128) NOT NULL,
+    search_count INT NOT NULL DEFAULT 0,
+    is_trending TINYINT(1) NOT NULL DEFAULT 0,
     created_at DATETIME NULL,
     updated_at DATETIME NULL
   )`,
@@ -102,6 +116,27 @@ const CREATE_TABLES = [
     referral_count INT NOT NULL DEFAULT 0,
     click_count INT NOT NULL DEFAULT 0,
     search_keywords TEXT NULL,
+    created_at DATETIME NULL,
+    updated_at DATETIME NULL
+  )`,
+  `CREATE TABLE IF NOT EXISTS archived_partners (
+    id VARCHAR(64) PRIMARY KEY,
+    partner_id VARCHAR(64) NOT NULL,
+    snapshot JSON NOT NULL,
+    archived_by VARCHAR(64) NULL,
+    archived_at DATETIME NOT NULL,
+    created_at DATETIME NULL
+  )`,
+  `CREATE TABLE IF NOT EXISTS notification_campaigns (
+    id VARCHAR(64) PRIMARY KEY,
+    title VARCHAR(200) NOT NULL,
+    body TEXT NOT NULL,
+    type VARCHAR(32) NOT NULL DEFAULT 'offer',
+    city VARCHAR(120) NULL,
+    total_sent INT NOT NULL DEFAULT 0,
+    delivered_count INT NOT NULL DEFAULT 0,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    created_by VARCHAR(64) NULL,
     created_at DATETIME NULL,
     updated_at DATETIME NULL
   )`,

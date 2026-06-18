@@ -17,6 +17,12 @@ export function isValidImageUrl(url) {
   return URL_RE.test(s);
 }
 
+export function isValidMediaUrl(url) {
+  if (url == null || url === '') return false;
+  const s = String(url).trim();
+  return URL_RE.test(s) || s.startsWith('data:image/');
+}
+
 export function validateBannerPayload(body, { partial = false } = {}) {
   const errors = [];
   const b = body || {};
@@ -31,8 +37,13 @@ export function validateBannerPayload(body, { partial = false } = {}) {
     errors.push('subtitle max 300 characters');
   }
 
-  if (b.imageUrl !== undefined && !isValidImageUrl(b.imageUrl)) {
-    errors.push('imageUrl must be a valid http(s) URL');
+  if (b.imageUrl !== undefined && b.imageUrl != null && String(b.imageUrl).trim() && !isValidImageUrl(b.imageUrl) && !isValidMediaUrl(b.imageUrl)) {
+    errors.push('imageUrl must be a valid http(s) URL or image data URL');
+  }
+
+  if (b.mediaType !== undefined) {
+    const mt = String(b.mediaType || 'image').toLowerCase();
+    if (!['image', 'video'].includes(mt)) errors.push('mediaType must be image or video');
   }
 
   if (!partial || b.redirectType !== undefined) {

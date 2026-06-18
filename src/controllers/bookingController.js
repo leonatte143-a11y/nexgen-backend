@@ -15,6 +15,8 @@ import {
   loadLineItemsForBookings,
 } from '../services/bookingLines.js';
 import { ctrlLog } from '../utils/devLogger.js';
+import { logCustomRequirement } from '../services/searchLogService.js';
+import { isLivePartner } from '../utils/partnerFilters.js';
 
 function genOtp() {
   return String(randomInt(1000, 10000));
@@ -100,6 +102,7 @@ export async function createBooking(req, res, next) {
       partnerId: bodyPartnerId,
       address,
       notes = '',
+      customRequirements = '',
       paymentMethod = 'cod',
       promoCode,
       amountOverride,
@@ -125,6 +128,7 @@ export async function createBooking(req, res, next) {
       partner = selected;
     }
     if (!partner) return sendFail(res, 'Partner not linked to service', 400);
+    if (!isLivePartner(partner)) return sendFail(res, 'Partner is not available', 400);
 
     const city = cityFromAddress(address, partner);
     const quote =
@@ -207,8 +211,8 @@ export async function createBooking(req, res, next) {
       visitingFee: bill.visitingFee,
       adminCommission: bill.adminComm,
       partnerShare,
-      startOtp: genOtp(),
-      endOtp: genOtp(),
+      paymentStatus: 'pending',
+      customRequirements: String(customRequirements || '').slice(0, 2000) || null,
       scheduledAt: scheduled,
       scheduledAtIso: new Date(),
       etaMins: 12,
@@ -222,6 +226,14 @@ export async function createBooking(req, res, next) {
 
     if (lineItems.length) {
       await createBookingLineItems(b.id, lineItems);
+    }
+
+    if (customRequirements && String(customRequirements).trim()) {
+      await logCustomRequirement({
+        text: customRequirements,
+        city,
+        userId: req.userId,
+      }).catch(() => {});
     }
 
     if (userLat != null && userLng != null) {
@@ -255,6 +267,34 @@ export async function cancelBooking(req, res, next) {
   }
 }
 
+export async function confirmPayment(req, res, next) {
+  try {
+    const b = await Booking.findOne({ where: { id: req.params.id, userId: req.userId } });
+    if (!b) return sendFail(res, 'Booking not found', 404);
+    if (b.userStatus !== 'completed') return sendFail(res, 'Payment is only available after service completion', 400);
+    if (b.paymentStatus === 'paid') {
+      return sendOk(res, await bookingWithLineItems(b));
+    }
+    b.paymentStatus = 'paid';
+    await b.save();
+    const p = await Partner.findByPk(b.partnerId);
+    if (p) {
+      const share = toNum(b.partnerShare);
+      await p.update({
+        jobsCompleted: p.jobsCompleted + 1,
+        completedJobsCount: (p.completedJobsCount || 0) + 1,
+        totalJobsCount: (p.totalJobsCount || 0) + 1,
+        todayEarnings: toNum(p.todayEarnings) + share,
+        lifetimeEarnings: toNum(p.lifetimeEarnings) + share,
+        walletBalance: toNum(p.walletBalance) + share,
+      });
+    }
+    return sendOk(res, await bookingWithLineItems(b), 'Payment confirmed');
+  } catch (e) {
+    next(e);
+  }
+}
+
 export async function submitReview(req, res, next) {
   try {
     const { stars, tags = [], note = '' } = req.body;
@@ -262,6 +302,9 @@ export async function submitReview(req, res, next) {
     if (!b) return sendFail(res, 'Booking not found', 404);
     if (b.userStatus !== 'completed') {
       return sendFail(res, 'Only completed bookings can be reviewed', 400);
+    }
+    if (b.paymentStatus !== 'paid') {
+      return sendFail(res, 'Complete payment before submitting a review', 402);
     }
     const existing = await Review.findOne({ where: { bookingId: b.id } });
     if (existing) {

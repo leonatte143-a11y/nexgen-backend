@@ -63,6 +63,7 @@ export async function adminCreateBanner(req, res, next) {
       title: String(b.title).trim(),
       subtitle: b.subtitle?.trim() || null,
       imageUrl: b.imageUrl?.trim() || null,
+      mediaType: (b.mediaType || 'image').toLowerCase() === 'video' ? 'video' : 'image',
       ctaText: (b.ctaText?.trim() || 'Book Now').slice(0, 80),
       redirectType: b.redirectType || 'none',
       redirectValue: b.redirectValue?.trim() || null,
@@ -92,6 +93,9 @@ export async function adminUpdateBanner(req, res, next) {
     if (b.title !== undefined) patch.title = String(b.title).trim();
     if (b.subtitle !== undefined) patch.subtitle = b.subtitle?.trim() || null;
     if (b.imageUrl !== undefined) patch.imageUrl = b.imageUrl?.trim() || null;
+    if (b.mediaType !== undefined) {
+      patch.mediaType = String(b.mediaType).toLowerCase() === 'video' ? 'video' : 'image';
+    }
     if (b.ctaText !== undefined) patch.ctaText = (b.ctaText?.trim() || 'Book Now').slice(0, 80);
     if (b.redirectType !== undefined) patch.redirectType = b.redirectType;
     if (b.redirectValue !== undefined) patch.redirectValue = b.redirectValue?.trim() || null;

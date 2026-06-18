@@ -179,6 +179,9 @@ export async function getServicePartners(req, res, next) {
     const partners = await Partner.findAll({
       where: {
         verificationStatus: { [Op.in]: ['Verified', 'Approved'] },
+        archivedAt: null,
+        isBlocked: false,
+        accountStatus: { [Op.ne]: 'archived' },
       },
       order: [
         ['isOnline', 'DESC'],
