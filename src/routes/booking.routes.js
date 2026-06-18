@@ -9,6 +9,7 @@ r.get('/', c.listMyBookings);
 r.get('/:id', c.getBooking);
 r.post('/', c.createBooking);
 r.post('/:id/cancel', c.cancelBooking);
+r.post('/:id/confirm-payment', c.confirmPayment);
 r.post('/:id/review', c.submitReview);
 
 export default r;

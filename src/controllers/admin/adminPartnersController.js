@@ -8,8 +8,12 @@ import { recordAdminAction } from '../../utils/auditLog.js';
 
 export async function listPartners(req, res, next) {
   try {
-    const { q, status, online } = req.query;
+    const { q, status, online, includeArchived } = req.query;
     const where = {};
+    if (includeArchived !== 'true') {
+      where.archivedAt = null;
+      where.accountStatus = { [Op.ne]: 'archived' };
+    }
     if (status) where.verificationStatus = status;
     if (online === 'true') where.isOnline = true;
     if (online === 'false') where.isOnline = false;
@@ -38,7 +42,11 @@ export async function listPartners(req, res, next) {
 export async function listPendingKyc(_req, res, next) {
   try {
     const rows = await Partner.findAll({
-      where: { verificationStatus: { [Op.in]: ['Pending', 'pending', 'Rejected'] } },
+      where: {
+        verificationStatus: { [Op.in]: ['Pending', 'pending', 'Rejected'] },
+        archivedAt: null,
+        accountStatus: { [Op.ne]: 'archived' },
+      },
       order: [['createdAt', 'ASC']],
     });
     const docs = await PartnerDocument.findAll();

@@ -7,6 +7,7 @@ import {
   findPartnerNearbyShop,
   recommendedCategoryIdsForUser,
 } from '../services/shopDiscovery.js';
+import { bumpCategorySearch, getTrendingSuggestions, slugify } from '../services/trendingCategoryService.js';
 import { haversineKm } from '../utils/haversine.js';
 import { toNum } from '../serializers/formatters.js';
 
@@ -36,6 +37,7 @@ export async function listNearby(req, res, next) {
     const { lat: uLat, lng: uLng } = defaultCoords(req.query.lat, req.query.lng);
     const radiusKm = Math.min(20, Math.max(1, parseFloat(String(req.query.radiusKm)) || 10));
     const q = String(req.query.q || '').trim().toLowerCase();
+    if (q) await bumpCategorySearch(q).catch(() => {});
     const categoryId = String(req.query.categoryId || '').trim() || null;
     const userId = req.userId || null;
 
@@ -136,12 +138,45 @@ export async function trackDirections(req, res, next) {
   }
 }
 
+export async function trendingSuggestions(_req, res, next) {
+  try {
+    const trending = await getTrendingSuggestions(5);
+    const staticCats = await ShopCategory.findAll({ where: { isActive: true }, order: [['name', 'ASC']] });
+    const seen = new Set(trending.map((t) => t.id));
+    const merged = [
+      ...trending,
+      ...staticCats.filter((c) => !seen.has(c.id)).map((c) => ({ id: c.id, name: c.name, searchCount: 0 })),
+    ];
+    return sendOk(res, merged.slice(0, 12));
+  } catch (e) {
+    next(e);
+  }
+}
+
+async function resolveShopCategory({ categoryId, categoryName }) {
+  if (categoryId) {
+    const existing = await ShopCategory.findByPk(String(categoryId));
+    if (existing) return existing;
+  }
+  const name = String(categoryName || categoryId || '').trim();
+  if (!name) return null;
+  const id = slugify(name) || `cat_${Date.now()}`;
+  const [cat] = await ShopCategory.findOrCreate({
+    where: { id },
+    defaults: { id, name, isActive: true },
+  });
+  if (cat.name !== name) await cat.update({ name });
+  await bumpCategorySearch(name);
+  return cat;
+}
+
 export async function applyShop(req, res, next) {
   try {
     const {
       shopName,
       ownerName,
       categoryId,
+      categoryName,
       phone,
       address,
       city,
@@ -151,10 +186,9 @@ export async function applyShop(req, res, next) {
       leadPreference,
     } = req.body;
     if (!shopName?.trim()) return sendFail(res, 'Shop name required', 400);
-    if (!categoryId) return sendFail(res, 'Category required', 400);
 
-    const cat = await ShopCategory.findByPk(String(categoryId));
-    if (!cat) return sendFail(res, 'Invalid category', 400);
+    const cat = await resolveShopCategory({ categoryId, categoryName });
+    if (!cat) return sendFail(res, 'Category required', 400);
 
     const id = `shop_${randomUUID().slice(0, 10)}`;
     const keywords = `${shopName} ${cat.name} ${address || ''}`.toLowerCase();

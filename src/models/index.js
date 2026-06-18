@@ -37,6 +37,9 @@ import { defineVisitingChargeRule } from './VisitingChargeRule.js';
 import { defineEmergencyRequest } from './EmergencyRequest.js';
 import { defineShopCategory } from './ShopCategory.js';
 import { defineShop } from './Shop.js';
+import { defineTrendingCategory } from './TrendingCategory.js';
+import { defineArchivedPartner } from './ArchivedPartner.js';
+import { defineNotificationCampaign } from './NotificationCampaign.js';
 
 export const User = defineUser(sequelize);
 export const Partner = definePartner(sequelize);
@@ -74,6 +77,9 @@ export const VisitingChargeRule = defineVisitingChargeRule(sequelize);
 export const EmergencyRequest = defineEmergencyRequest(sequelize);
 export const ShopCategory = defineShopCategory(sequelize);
 export const Shop = defineShop(sequelize);
+export const TrendingCategory = defineTrendingCategory(sequelize);
+export const ArchivedPartner = defineArchivedPartner(sequelize);
+export const NotificationCampaign = defineNotificationCampaign(sequelize);
 
 Service.belongsTo(Category, { foreignKey: 'categoryId', as: 'category' });
 Service.belongsTo(Partner, { foreignKey: 'partnerId', as: 'partner' });

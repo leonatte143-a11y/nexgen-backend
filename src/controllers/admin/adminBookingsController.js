@@ -30,6 +30,9 @@ function toAdminBooking(b, user, partner, lineItems = []) {
       ? { id: user.id, phone: user.phone, name: [user.firstName, user.lastName].filter(Boolean).join(' ') }
       : null,
     partner: partner ? { id: partner.id, phone: partner.phone, name: partner.name, isOnline: partner.isOnline } : null,
+    customRequirements: b.customRequirements || null,
+    hasCustomRequest: Boolean(b.customRequirements && String(b.customRequirements).trim()),
+    paymentStatus: b.paymentStatus || 'pending',
   };
 }
 
@@ -88,7 +91,7 @@ export async function liveBookings(_req, res, next) {
   try {
     const rows = await Booking.findAll({
       where: {
-        partnerStatus: { [Op.in]: ['accepted', 'in_progress', 'new'] },
+        partnerStatus: { [Op.in]: ['pending', 'in_progress', 'new'] },
         userStatus: { [Op.notIn]: ['cancelled', 'completed', 'done'] },
       },
       order: [['createdAt', 'DESC']],

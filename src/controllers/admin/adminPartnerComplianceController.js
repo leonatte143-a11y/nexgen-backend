@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import { Op } from 'sequelize';
-import { Partner, PartnerWarning, Booking, Review } from '../../models/index.js';
+import { Partner, PartnerWarning, Booking, Review, ArchivedPartner } from '../../models/index.js';
 import { sendOk, sendFail } from '../../utils/apiResponse.js';
 import { toPartnerProfile } from '../../serializers/mappers.js';
 import { recordAdminAction } from '../../utils/auditLog.js';
@@ -77,14 +77,35 @@ export async function archivePartner(req, res, next) {
   try {
     const p = await Partner.findByPk(req.params.id);
     if (!p) return sendFail(res, 'Partner not found', 404);
-    await p.update({ archivedAt: new Date(), isOnline: false, accountStatus: 'archived' });
+    if (p.archivedAt) return sendFail(res, 'Partner already archived', 409);
+
+    const archivedAt = new Date();
+    await ArchivedPartner.create({
+      id: `ap_${randomUUID().slice(0, 10)}`,
+      partnerId: p.id,
+      snapshot: {
+        id: p.id,
+        name: p.name,
+        phone: p.phone,
+        walletBalance: p.walletBalance,
+        rating: p.rating,
+        jobsCompleted: p.jobsCompleted,
+        verificationStatus: p.verificationStatus,
+        primaryCity: p.primaryCity,
+        accountStatus: p.accountStatus,
+      },
+      archivedBy: req.adminId || null,
+      archivedAt,
+    });
+
+    await p.update({ archivedAt, isOnline: false, accountStatus: 'archived' });
     await recordAdminAction(req.adminId, 'partner_archive', {
       entityType: 'partner',
       entityId: p.id,
       meta: { name: p.name },
       req,
     });
-    return sendOk(res, toPartnerProfile(p), 'Partner archived');
+    return sendOk(res, toPartnerProfile(p), 'Partner removed from live platform');
   } catch (e) {
     next(e);
   }

@@ -4,6 +4,8 @@ export function toBannerDto(row) {
     title: row.title,
     subtitle: row.subtitle ?? '',
     imageUrl: row.imageUrl ?? '',
+    mediaType: row.mediaType || 'image',
+    mediaUrl: row.imageUrl ?? '',
     ctaText: row.ctaText ?? 'Book Now',
     redirectType: row.redirectType,
     redirectValue: row.redirectValue ?? '',

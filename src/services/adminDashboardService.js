@@ -100,10 +100,12 @@ export async function getSearchAnalytics() {
   const rows = await SearchLog.findAll({
     attributes: [
       'query',
+      'source',
       [fn('COUNT', col('id')), 'searchCount'],
       [fn('AVG', col('results_count')), 'avgResults'],
+      [fn('MAX', col('detail_text')), 'sampleDetail'],
     ],
-    group: ['query'],
+    group: ['query', 'source'],
     order: [[literal('searchCount'), 'DESC']],
     limit: 50,
     raw: true,
@@ -113,6 +115,9 @@ export async function getSearchAnalytics() {
     searches: Number(r.searchCount),
     avgPartnersFound: Math.round(Number(r.avgResults) || 0),
     unmet: Number(r.avgResults) === 0,
+    source: r.source || 'search',
+    userCustomRequirements:
+      r.source === 'custom_requirement' ? String(r.sampleDetail || r.query) : '',
   }));
 }
 

@@ -20,6 +20,10 @@ import {
 } from '../services/partnerPricing.js';
 import { loadLineItemsForBookings } from '../services/bookingLines.js';
 
+function genOtp() {
+  return String(randomInt(1000, 10000));
+}
+
 function recalcPartnerEarnings(p) {
   p.rewardPoints = p.rewardPoints || 0;
   return p;
@@ -234,14 +238,47 @@ export async function rejectRequest(req, res, next) {
   }
 }
 
+export async function markArrived(req, res, next) {
+  try {
+    const b = await bookingForPartner(req);
+    if (!b || b.partnerStatus !== 'pending') return sendFail(res, 'Invalid state', 400);
+    if (b.isPartnerArrived) return sendOk(res, toPartnerRequest(formatReq(b)));
+    b.isPartnerArrived = true;
+    b.startOtp = genOtp();
+    b.endOtp = null;
+    await b.save();
+    return sendOk(res, toPartnerRequest(formatReq(b)));
+  } catch (e) {
+    next(e);
+  }
+}
+
 export async function startJob(req, res, next) {
   try {
     const b = await bookingForPartner(req);
     if (!b || b.partnerStatus !== 'pending') return sendFail(res, 'Invalid state', 400);
+    if (!b.isPartnerArrived) return sendFail(res, 'Mark arrived before starting the job', 400);
     const otp = String(req.body?.otp || req.body?.startOtp || '').trim();
     if (!otp || otp !== String(b.startOtp)) return sendFail(res, 'Invalid start OTP', 400);
     b.partnerStatus = 'in_progress';
     b.userStatus = 'in_progress';
+    b.startOtp = null;
+    b.workDoneRequested = false;
+    b.endOtp = null;
+    await b.save();
+    return sendOk(res, toPartnerRequest(formatReq(b)));
+  } catch (e) {
+    next(e);
+  }
+}
+
+export async function markWorkDone(req, res, next) {
+  try {
+    const b = await bookingForPartner(req);
+    if (!b || b.partnerStatus !== 'in_progress') return sendFail(res, 'Invalid state', 400);
+    if (b.workDoneRequested) return sendOk(res, toPartnerRequest(formatReq(b)));
+    b.workDoneRequested = true;
+    b.endOtp = genOtp();
     await b.save();
     return sendOk(res, toPartnerRequest(formatReq(b)));
   } catch (e) {
@@ -253,20 +290,15 @@ export async function completeJob(req, res, next) {
   try {
     const b = await bookingForPartner(req);
     if (!b || b.partnerStatus !== 'in_progress') return sendFail(res, 'Invalid state', 400);
+    if (!b.workDoneRequested) return sendFail(res, 'Tap Work Done before entering completion OTP', 400);
     const otp = String(req.body?.otp || req.body?.endOtp || '').trim();
     if (!otp || otp !== String(b.endOtp)) return sendFail(res, 'Invalid completion OTP', 400);
     b.partnerStatus = 'completed';
     b.userStatus = 'completed';
-    const share = toNum(b.partnerShare);
-    const p = await Partner.findByPk(req.partnerId);
-    await p.update({
-      jobsCompleted: p.jobsCompleted + 1,
-      completedJobsCount: (p.completedJobsCount || 0) + 1,
-      totalJobsCount: (p.totalJobsCount || 0) + 1,
-      todayEarnings: toNum(p.todayEarnings) + share,
-      lifetimeEarnings: toNum(p.lifetimeEarnings) + share,
-      walletBalance: toNum(p.walletBalance) + share,
-    });
+    b.endOtp = null;
+    b.startOtp = null;
+    b.workDoneRequested = false;
+    b.paymentStatus = 'pending';
     await b.save();
     return sendOk(res, toPartnerRequest(formatReq(b)));
   } catch (e) {

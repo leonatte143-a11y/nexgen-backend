@@ -59,6 +59,10 @@ export function toCatalogService(service) {
 }
 
 export function toUserBooking(b, lineItems = []) {
+  const showStartOtp =
+    b.isPartnerArrived && b.partnerStatus === 'pending' && b.startOtp;
+  const showEndOtp =
+    b.workDoneRequested && b.partnerStatus === 'in_progress' && b.endOtp;
   return {
     id: b.id,
     serviceId: b.serviceId,
@@ -68,8 +72,8 @@ export function toUserBooking(b, lineItems = []) {
     partnerRating: toNum(b.partnerRating),
     status: b.userStatus,
     totalAmount: toNum(b.totalAmount),
-    startOtp: b.startOtp,
-    endOtp: b.endOtp,
+    startOtp: showStartOtp ? b.startOtp : undefined,
+    endOtp: showEndOtp ? b.endOtp : undefined,
     scheduledAt: b.scheduledAt,
     createdAt: b.createdAt,
     address: b.address,
@@ -80,7 +84,11 @@ export function toUserBooking(b, lineItems = []) {
     distanceKm: b.distanceKm != null ? toNum(b.distanceKm) : undefined,
     lineItems: lineItems.length ? lineItems : undefined,
     isPartnerArrived: b.isPartnerArrived || false,
+    workDoneRequested: Boolean(b.workDoneRequested),
     heavyWorkEstimateRequested: Boolean(b.heavyWorkEstimate),
+    customRequirements: b.customRequirements || undefined,
+    paymentStatus: b.paymentStatus || 'pending',
+    paymentMethod: b.paymentMethod || undefined,
   };
 }
 
@@ -99,7 +107,10 @@ export function toPartnerRequest(b, lineItems = []) {
     commission: toNum(b.adminCommission),
     partnerShare: toNum(b.partnerShare),
     notes: b.notes || '',
+    customRequirements: b.customRequirements || undefined,
     customerPhone: b.customerPhone || undefined,
+    isPartnerArrived: b.isPartnerArrived || false,
+    workDoneRequested: Boolean(b.workDoneRequested),
     requestedAt: b.requestedAtLabel || timeAgoLabel(b.createdAt),
     extraServices: b.extraServices || undefined,
     lineItems: lineItems.length ? lineItems : undefined,
