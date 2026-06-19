@@ -4,7 +4,8 @@ import { normalizeAdminRole, roleHasAnyPermission, roleHasPermission } from '../
 export function requirePermission(...permissions) {
   return (req, res, next) => {
     const adminRole = normalizeAdminRole(req.adminRole);
-    const ok = permissions.some((p) => roleHasPermission(adminRole, p));
+    const custom = req.adminPermissions;
+    const ok = permissions.some((p) => roleHasPermission(adminRole, p, custom));
     if (!ok) {
       return sendFail(res, 'Insufficient permissions for this action', 403);
     }
@@ -15,7 +16,7 @@ export function requirePermission(...permissions) {
 export function requireAnyPermission(permissions) {
   return (req, res, next) => {
     const adminRole = normalizeAdminRole(req.adminRole);
-    if (!roleHasAnyPermission(adminRole, permissions)) {
+    if (!roleHasAnyPermission(adminRole, permissions, req.adminPermissions)) {
       return sendFail(res, 'Insufficient permissions for this action', 403);
     }
     next();

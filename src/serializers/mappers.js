@@ -24,6 +24,7 @@ export function toCatalogService(service) {
       subtext: service.subtext,
       categoryLabel: service.categoryLabel,
       basePrice: toNum(service.basePrice),
+      premiumPrice: service.premiumPrice != null ? toNum(service.premiumPrice) : toNum(service.basePrice),
       rating: toNum(service.rating),
       reviewsCount: service.reviewsCount,
       partner: {
@@ -44,6 +45,7 @@ export function toCatalogService(service) {
     subtext: service.subtext,
     categoryLabel: service.categoryLabel,
     basePrice: toNum(service.basePrice),
+    premiumPrice: service.premiumPrice != null ? toNum(service.premiumPrice) : toNum(service.basePrice),
     rating: toNum(service.rating),
     reviewsCount: service.reviewsCount,
     partner: {
@@ -59,8 +61,6 @@ export function toCatalogService(service) {
 }
 
 export function toUserBooking(b, lineItems = []) {
-  const showStartOtp =
-    b.isPartnerArrived && b.partnerStatus === 'pending' && b.startOtp;
   const showEndOtp =
     b.workDoneRequested && b.partnerStatus === 'in_progress' && b.endOtp;
   return {
@@ -72,7 +72,6 @@ export function toUserBooking(b, lineItems = []) {
     partnerRating: toNum(b.partnerRating),
     status: b.userStatus,
     totalAmount: toNum(b.totalAmount),
-    startOtp: showStartOtp ? b.startOtp : undefined,
     endOtp: showEndOtp ? b.endOtp : undefined,
     scheduledAt: b.scheduledAt,
     createdAt: b.createdAt,
@@ -145,6 +144,7 @@ export function toPartnerProfile(p) {
     rating: toNum(p.rating),
     jobsCompleted: p.jobsCompleted,
     isOnline: p.isOnline,
+    isFrozen: Boolean(p.isFrozen),
     skills: jsonStringArray(p.skills),
     categories: jsonStringArray(p.categories),
     walletBalance: toNum(p.walletBalance),

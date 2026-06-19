@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 import { User, AdminUser, Partner } from '../models/index.js';
 import { issueOtp, verifyOtpRecord, getOtpDigitLength } from '../services/otpService.js';
 import { signToken } from '../utils/jwt.js';
+import { resolveAdminPermissions } from '../constants/rbac.js';
 import { sendOk, sendFail } from '../utils/apiResponse.js';
 import { toMockUser, toPartnerProfile } from '../serializers/mappers.js';
 import { upsertPartnerRegistration } from './partnerController.js';
@@ -242,8 +243,9 @@ export async function adminLogin(req, res, next) {
       return sendFail(res, 'Your account has been restricted. Please contact support.', 403);
     }
     const staffRole = admin.role || 'admin';
+    const permissions = resolveAdminPermissions(staffRole, admin.permissions);
     const token = signToken(
-      { sub: admin.id, email: admin.email, adminRole: staffRole },
+      { sub: admin.id, email: admin.email, adminRole: staffRole, permissions },
       'admin',
     );
     await admin.update({ lastLoginAt: new Date() });
@@ -258,6 +260,7 @@ export async function adminLogin(req, res, next) {
           name: admin.name || 'NEXGEN Admin',
           role: admin.role || 'super_admin',
           mustResetPassword: Boolean(admin.mustResetPassword),
+          permissions,
         },
       },
       'ok',

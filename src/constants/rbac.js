@@ -90,12 +90,19 @@ export const ROLE_PERMISSIONS = {
   ],
 };
 
-export function roleHasPermission(adminRole, permission) {
-  const role = normalizeAdminRole(adminRole);
-  const perms = ROLE_PERMISSIONS[role] || ROLE_PERMISSIONS.admin;
+export function roleHasPermission(adminRole, permission, customPermissions) {
+  const perms = resolveAdminPermissions(adminRole, customPermissions);
   return perms.includes(permission);
 }
 
-export function roleHasAnyPermission(adminRole, permissions) {
-  return permissions.some((p) => roleHasPermission(adminRole, p));
+export function resolveAdminPermissions(adminRole, customPermissions) {
+  if (Array.isArray(customPermissions) && customPermissions.length > 0) {
+    return customPermissions.filter((p) => ALL.includes(p));
+  }
+  const role = normalizeAdminRole(adminRole);
+  return ROLE_PERMISSIONS[role] || ROLE_PERMISSIONS.admin;
+}
+
+export function roleHasAnyPermission(adminRole, permissions, customPermissions) {
+  return permissions.some((p) => roleHasPermission(adminRole, p, customPermissions));
 }

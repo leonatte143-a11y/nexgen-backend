@@ -26,6 +26,7 @@ function toStaffRow(admin, profile) {
     baseSalary: profile ? Number(profile.baseSalary) : 0,
     upiId: profile?.upiId || null,
     mustResetPassword: Boolean(admin.mustResetPassword),
+    permissions: Array.isArray(admin.permissions) ? admin.permissions : [],
   };
 }
 
@@ -54,7 +55,7 @@ export async function createStaff(req, res, next) {
     if (normalizeAdminRole(req.adminRole) !== 'admin') {
       return sendFail(res, 'Only admin can onboard new staff', 403);
     }
-    const { name, email, phone, role, designation, baseSalary, upiId } = req.body;
+    const { name, email, phone, role, designation, baseSalary, upiId, permissions } = req.body;
     const normalizedEmail = String(email || '').trim().toLowerCase();
     const staffRole = String(role || 'manager').toLowerCase();
     if (!name?.trim() || !normalizedEmail) {
@@ -76,6 +77,7 @@ export async function createStaff(req, res, next) {
       role: staffRole,
       isActive: true,
       mustResetPassword: true,
+      permissions: Array.isArray(permissions) && permissions.length ? permissions : null,
     });
 
     await StaffProfile.create({
@@ -98,7 +100,7 @@ export async function createStaff(req, res, next) {
       {
         staff: toStaffRow(admin, await StaffProfile.findOne({ where: { adminUserId: admin.id } })),
         tempPassword,
-        loginUrl: '/login',
+        loginUrl: '/admin-login',
       },
       'Staff onboarded. Share the temporary password securely.',
     );
