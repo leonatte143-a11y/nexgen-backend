@@ -24,6 +24,7 @@ import * as fraud from '../controllers/admin/adminFraudController.js';
 import * as partnerPrices from '../controllers/admin/adminPartnerPricesController.js';
 import * as staff from '../controllers/admin/adminStaffController.js';
 import * as shops from '../controllers/admin/adminShopsController.js';
+import * as meta from '../controllers/admin/adminMetaController.js';
 
 const r = Router();
 r.use(requireAdmin);
@@ -65,8 +66,10 @@ r.put('/partners/:id', requirePermission(P.PARTNERS_MANAGE), partners.updatePart
 r.post('/partners/:id/documents', requirePermission(P.KYC_MANAGE), partners.uploadPartnerDocument);
 r.post('/partners/:id/warn', requirePermission(P.PARTNERS_COMPLIANCE), compliance.warnPartner);
 r.post('/partners/:id/freeze', requirePermission(P.PARTNERS_COMPLIANCE), compliance.freezePartner);
+r.post('/partners/:id/unfreeze', requirePermission(P.PARTNERS_COMPLIANCE), compliance.unfreezePartner);
 r.post('/partners/:id/block', requirePermission(P.PARTNERS_COMPLIANCE), compliance.blockPartner);
 r.post('/partners/:id/archive', requirePermission(P.PARTNERS_COMPLIANCE), compliance.archivePartner);
+r.get('/hover-meta', requirePermission(P.DASHBOARD_VIEW, P.PARTNERS_MANAGE, P.USERS_MANAGE, P.STAFF_MANAGE), meta.getHoverMeta);
 r.get('/partners/strike-board', requirePermission(P.PARTNERS_COMPLIANCE), compliance.strikeBoard);
 
 // Partner price review

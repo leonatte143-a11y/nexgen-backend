@@ -1,7 +1,7 @@
 import { Op } from 'sequelize';
 import { parseCityQuery } from '../utils/bannerValidation.js';
 
-export function buildActiveBannerWhere(cityQuery) {
+export function buildActiveBannerWhere(cityQuery, placement) {
   const now = new Date();
   const city = parseCityQuery(cityQuery);
 
@@ -16,6 +16,10 @@ export function buildActiveBannerWhere(cityQuery) {
       },
     ],
   };
+
+  if (placement) {
+    where.placement = placement;
+  }
 
   if (city) {
     where[Op.and].push({

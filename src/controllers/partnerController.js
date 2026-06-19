@@ -241,11 +241,15 @@ export async function rejectRequest(req, res, next) {
 export async function markArrived(req, res, next) {
   try {
     const b = await bookingForPartner(req);
-    if (!b || b.partnerStatus !== 'pending') return sendFail(res, 'Invalid state', 400);
-    if (b.isPartnerArrived) return sendOk(res, toPartnerRequest(formatReq(b)));
+    if (!b) return sendFail(res, 'Request not found', 404);
+    if (b.partnerStatus === 'in_progress') return sendOk(res, toPartnerRequest(formatReq(b)));
+    if (b.partnerStatus !== 'pending') return sendFail(res, 'Invalid state', 400);
     b.isPartnerArrived = true;
-    b.startOtp = genOtp();
+    b.partnerStatus = 'in_progress';
+    b.userStatus = 'in_progress';
+    b.startOtp = null;
     b.endOtp = null;
+    b.workDoneRequested = false;
     await b.save();
     return sendOk(res, toPartnerRequest(formatReq(b)));
   } catch (e) {
@@ -253,13 +257,15 @@ export async function markArrived(req, res, next) {
   }
 }
 
+/** @deprecated Start OTP removed — arrive auto-starts the job. Kept for backward-compatible clients. */
 export async function startJob(req, res, next) {
   try {
     const b = await bookingForPartner(req);
-    if (!b || b.partnerStatus !== 'pending') return sendFail(res, 'Invalid state', 400);
-    if (!b.isPartnerArrived) return sendFail(res, 'Mark arrived before starting the job', 400);
-    const otp = String(req.body?.otp || req.body?.startOtp || '').trim();
-    if (!otp || otp !== String(b.startOtp)) return sendFail(res, 'Invalid start OTP', 400);
+    if (!b) return sendFail(res, 'Request not found', 404);
+    if (b.partnerStatus === 'in_progress') return sendOk(res, toPartnerRequest(formatReq(b)));
+    if (b.partnerStatus !== 'pending' || !b.isPartnerArrived) {
+      return sendFail(res, 'Invalid state', 400);
+    }
     b.partnerStatus = 'in_progress';
     b.userStatus = 'in_progress';
     b.startOtp = null;

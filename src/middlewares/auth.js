@@ -78,6 +78,7 @@ export function requireAdmin(req, res, next) {
     req.adminId = payload.sub;
     req.adminRole = payload.adminRole || payload.staffRole || 'admin';
     req.adminEmail = payload.email;
+    req.adminPermissions = Array.isArray(payload.permissions) ? payload.permissions : null;
     next();
   } catch {
     return sendFail(res, 'Invalid or expired token', 401);

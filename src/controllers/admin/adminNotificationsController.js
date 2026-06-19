@@ -1,42 +1,83 @@
 import { randomUUID } from 'crypto';
 import { Op } from 'sequelize';
-import { Notification, User, NotificationCampaign } from '../../models/index.js';
+import { Notification, User, NotificationCampaign, Partner, Shop } from '../../models/index.js';
 import { sendOk, sendFail } from '../../utils/apiResponse.js';
 import { recordAdminAction } from '../../utils/auditLog.js';
 
+async function resolveAudienceUserIds(audience) {
+  const aud = String(audience || 'all_users');
+  if (aud === 'all_users') {
+    return User.findAll({ attributes: ['id'] });
+  }
+  if (aud === 'partners') {
+    const partners = await Partner.findAll({
+      attributes: ['phone'],
+      where: { archivedAt: null },
+    });
+    const phones = new Set(partners.map((p) => String(p.phone || '').replace(/\D/g, '').slice(-10)).filter(Boolean));
+    const users = await User.findAll({ attributes: ['id', 'phone'] });
+    return users.filter((u) => phones.has(String(u.phone || '').replace(/\D/g, '').slice(-10)));
+  }
+  if (aud === 'shops') {
+    const shops = await Shop.findAll({ attributes: ['phone'], where: { isActive: true } });
+    const phones = new Set(shops.map((s) => String(s.phone || '').replace(/\D/g, '').slice(-10)).filter(Boolean));
+    const users = await User.findAll({ attributes: ['id', 'phone'] });
+    return users.filter((u) => phones.has(String(u.phone || '').replace(/\D/g, '').slice(-10)));
+  }
+  return User.findAll({ attributes: ['id'] });
+}
+
 export async function broadcast(req, res, next) {
   try {
-    const { title, body, city, type = 'offer' } = req.body;
+    const {
+      title,
+      body,
+      city,
+      type = 'offer',
+      audience = 'all_users',
+      expiresAt,
+    } = req.body;
     if (!title || !body) return sendFail(res, 'title and body required', 400);
-    const users = await User.findAll({ attributes: ['id'] });
+
+    const recipients = await resolveAudienceUserIds(audience);
+    const expiry = expiresAt ? new Date(expiresAt) : null;
+    const messageBody = city ? `${body} (${city})` : body;
     let count = 0;
-    for (const u of users.slice(0, 500)) {
+
+    for (const u of recipients.slice(0, 500)) {
       await Notification.create({
         id: `n_${randomUUID().slice(0, 10)}`,
         userId: u.id,
         type,
         title,
-        body: city ? `${body} (${city})` : body,
+        body: messageBody,
         read: false,
         timeLabel: 'now',
+        expiresAt: expiry,
+        audience: String(audience),
       });
       count += 1;
     }
 
     const isLiveType = ['alert', 'order', 'health', 'live'].includes(String(type).toLowerCase());
+    const now = new Date();
+    const campaignActive = isLiveType && (!expiry || expiry > now);
+
     await NotificationCampaign.create({
       id: `nc_${randomUUID().slice(0, 10)}`,
       title,
-      body: city ? `${body} (${city})` : body,
+      body: messageBody,
       type: isLiveType ? 'live' : 'offer',
       city: city || null,
+      audience: String(audience),
+      expiresAt: expiry,
       totalSent: count,
       deliveredCount: count,
-      isActive: isLiveType,
+      isActive: campaignActive,
       createdBy: req.adminId || null,
     });
 
-    await recordAdminAction(req.adminId, 'notification_broadcast', { meta: { count, city } });
+    await recordAdminAction(req.adminId, 'notification_broadcast', { meta: { count, city, audience }, req });
     return sendOk(res, { sent: count }, 'Broadcast sent');
   } catch (e) {
     next(e);
@@ -89,24 +130,31 @@ export async function listNotificationsAdmin(req, res, next) {
 
 export async function listNotificationCampaigns(_req, res, next) {
   try {
+    const now = new Date();
     const rows = await NotificationCampaign.findAll({
       order: [['createdAt', 'DESC']],
       limit: 100,
     });
     return sendOk(
       res,
-      rows.map((r) => ({
-        id: r.id,
-        title: r.title,
-        body: r.body,
-        type: r.type,
-        city: r.city,
-        totalSent: r.totalSent,
-        delivered: r.deliveredCount,
-        isActive: r.isActive,
-        statusLabel: r.isActive ? 'Live' : 'Sent',
-        createdAt: r.createdAt,
-      })),
+      rows.map((r) => {
+        const expired = r.expiresAt && new Date(r.expiresAt) < now;
+        const live = r.isActive && !expired;
+        return {
+          id: r.id,
+          title: r.title,
+          body: r.body,
+          type: r.type,
+          audience: r.audience,
+          city: r.city,
+          totalSent: r.totalSent,
+          delivered: r.deliveredCount,
+          isActive: live,
+          statusLabel: live ? 'Live' : expired ? 'Expired' : 'Sent',
+          expiresAt: r.expiresAt,
+          createdAt: r.createdAt,
+        };
+      }),
     );
   } catch (e) {
     next(e);

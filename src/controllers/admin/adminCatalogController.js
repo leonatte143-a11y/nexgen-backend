@@ -117,6 +117,7 @@ export async function listServicesAdmin(_req, res, next) {
       rows.map((s) => ({
         ...toCatalogService(s),
         commissionPercent: toNum(s.commissionPercent) || 10,
+        premiumPrice: s.premiumPrice != null ? toNum(s.premiumPrice) : toNum(s.basePrice),
         categoryId: s.categoryId,
         isActive: s.isActive !== false,
       })),
@@ -175,9 +176,10 @@ export async function updateService(req, res, next) {
   try {
     const s = await Service.findByPk(req.params.id, { include: [{ model: Partner, as: 'partner' }] });
     if (!s) return sendFail(res, 'Service not found', 404);
-    const { basePrice, name, subtext, categoryLabel, commissionPercent, description, isActive } = req.body;
+    const { basePrice, premiumPrice, name, subtext, categoryLabel, commissionPercent, description, isActive } = req.body;
     await s.update({
       basePrice: basePrice != null ? basePrice : s.basePrice,
+      premiumPrice: premiumPrice !== undefined ? premiumPrice : s.premiumPrice,
       name: name ?? s.name,
       subtext: subtext ?? s.subtext,
       categoryLabel: categoryLabel ?? s.categoryLabel,

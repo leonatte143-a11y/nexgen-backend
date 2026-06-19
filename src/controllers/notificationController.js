@@ -1,3 +1,4 @@
+import { Op } from 'sequelize';
 import { Notification, User } from '../models/index.js';
 import { sendOk, sendFail } from '../utils/apiResponse.js';
 import { toAppNotification } from '../serializers/mappers.js';
@@ -6,8 +7,12 @@ export async function listForUser(req, res, next) {
   try {
     const user = await User.findByPk(req.userId);
     if (!user) return sendFail(res, 'User not found', 404);
+    const now = new Date();
     const rows = await Notification.findAll({
-      where: { userId: user.id },
+      where: {
+        userId: user.id,
+        [Op.or]: [{ expiresAt: null }, { expiresAt: { [Op.gt]: now } }],
+      },
       order: [['createdAt', 'DESC']],
     });
     return sendOk(res, rows.map(toAppNotification));

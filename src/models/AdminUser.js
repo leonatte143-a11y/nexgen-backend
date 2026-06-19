@@ -13,6 +13,7 @@ export function defineAdminUser(sequelize) {
       isActive: { type: DataTypes.BOOLEAN, defaultValue: true },
       mustResetPassword: { type: DataTypes.BOOLEAN, defaultValue: false },
       lastLoginAt: { type: DataTypes.DATE, allowNull: true },
+      permissions: { type: DataTypes.JSON, allowNull: true, defaultValue: null },
     },
     {
       sequelize,

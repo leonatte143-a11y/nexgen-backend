@@ -20,6 +20,13 @@ function sortShops(rows) {
   });
 }
 
+function normalizeLeadPreference(raw) {
+  const v = String(raw || '').toLowerCase();
+  if (v === 'local' || v === 'offline') return 'local';
+  if (v === 'regional' || v === 'online') return 'regional';
+  return 'local';
+}
+
 export async function listCategories(_req, res, next) {
   try {
     const rows = await ShopCategory.findAll({
@@ -203,7 +210,7 @@ export async function applyShop(req, res, next) {
       latitude: latitude != null ? Number(latitude) : null,
       longitude: longitude != null ? Number(longitude) : null,
       gstOrLicense: String(gstOrLicense || '').slice(0, 128) || null,
-      leadPreference: leadPreference === 'online' ? 'online' : 'offline',
+      leadPreference: normalizeLeadPreference(leadPreference),
       verificationStatus: 'pending',
       isActive: false,
       isFeatured: false,

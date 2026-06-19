@@ -5,9 +5,9 @@ import { toBannerDto } from '../serializers/bannerMapper.js';
 import { buildActiveBannerWhere } from '../services/bannerQuery.js';
 import { validateBannerPayload } from '../utils/bannerValidation.js';
 
-async function fetchActiveBanners(city, limit = 20) {
+async function fetchActiveBanners(city, limit = 20, placement) {
   const rows = await AdvertisementBanner.findAll({
-    where: buildActiveBannerWhere(city),
+    where: buildActiveBannerWhere(city, placement),
     order: [
       ['priority', 'DESC'],
       ['createdAt', 'DESC'],
@@ -31,7 +31,8 @@ export async function listBanners(req, res, next) {
 export async function listHomeBanners(req, res, next) {
   try {
     const city = req.query.city;
-    const data = await fetchActiveBanners(city, 10);
+    const placement = req.query.placement || 'home_dashboard';
+    const data = await fetchActiveBanners(city, 10, placement);
     return sendOk(res, data);
   } catch (e) {
     next(e);
@@ -64,6 +65,7 @@ export async function adminCreateBanner(req, res, next) {
       subtitle: b.subtitle?.trim() || null,
       imageUrl: b.imageUrl?.trim() || null,
       mediaType: (b.mediaType || 'image').toLowerCase() === 'video' ? 'video' : 'image',
+      placement: b.placement || 'home_dashboard',
       ctaText: (b.ctaText?.trim() || 'Book Now').slice(0, 80),
       redirectType: b.redirectType || 'none',
       redirectValue: b.redirectValue?.trim() || null,
@@ -96,6 +98,7 @@ export async function adminUpdateBanner(req, res, next) {
     if (b.mediaType !== undefined) {
       patch.mediaType = String(b.mediaType).toLowerCase() === 'video' ? 'video' : 'image';
     }
+    if (b.placement !== undefined) patch.placement = b.placement || 'home_dashboard';
     if (b.ctaText !== undefined) patch.ctaText = (b.ctaText?.trim() || 'Book Now').slice(0, 80);
     if (b.redirectType !== undefined) patch.redirectType = b.redirectType;
     if (b.redirectValue !== undefined) patch.redirectValue = b.redirectValue?.trim() || null;

@@ -64,6 +64,13 @@ const COLUMN_ALTERS = [
   "ALTER TABLE search_logs ADD COLUMN source VARCHAR(32) NOT NULL DEFAULT 'search'",
   "ALTER TABLE search_logs ADD COLUMN detail_text TEXT NULL",
   "ALTER TABLE advertisement_banners ADD COLUMN media_type VARCHAR(16) NOT NULL DEFAULT 'image'",
+  "ALTER TABLE advertisement_banners ADD COLUMN placement VARCHAR(32) NOT NULL DEFAULT 'home_dashboard'",
+  "ALTER TABLE services ADD COLUMN premium_price DECIMAL(10,2) NULL",
+  "ALTER TABLE admin_users ADD COLUMN permissions JSON NULL",
+  "ALTER TABLE notifications ADD COLUMN expires_at DATETIME NULL",
+  "ALTER TABLE notifications ADD COLUMN audience VARCHAR(32) NULL",
+  "ALTER TABLE notification_campaigns ADD COLUMN audience VARCHAR(32) NOT NULL DEFAULT 'all_users'",
+  "ALTER TABLE notification_campaigns ADD COLUMN expires_at DATETIME NULL",
 ];
 
 const CREATE_TABLES = [

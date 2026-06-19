@@ -14,6 +14,8 @@ export function defineNotificationCampaign(sequelize) {
       deliveredCount: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
       isActive: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true },
       createdBy: { type: DataTypes.STRING(64), allowNull: true },
+      audience: { type: DataTypes.STRING(32), allowNull: false, defaultValue: 'all_users' },
+      expiresAt: { type: DataTypes.DATE, allowNull: true },
     },
     {
       sequelize,

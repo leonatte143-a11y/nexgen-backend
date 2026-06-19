@@ -111,6 +111,23 @@ export async function archivePartner(req, res, next) {
   }
 }
 
+export async function unfreezePartner(req, res, next) {
+  try {
+    const p = await Partner.findByPk(req.params.id);
+    if (!p) return sendFail(res, 'Partner not found', 404);
+    await p.update({ isFrozen: false, freezeUntil: null, accountStatus: 'active' });
+    await recordAdminAction(req.adminId, 'partner_unfreeze', {
+      entityType: 'partner',
+      entityId: p.id,
+      meta: { name: p.name },
+      req,
+    });
+    return sendOk(res, toPartnerProfile(p), 'Partner unfrozen');
+  } catch (e) {
+    next(e);
+  }
+}
+
 export async function strikeBoard(_req, res, next) {
   try {
     const partners = await Partner.findAll({ order: [['strikeCount', 'DESC']], limit: 100 });
