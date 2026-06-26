@@ -3,15 +3,13 @@ import { AdvertisementBanner } from '../models/index.js';
 import { sendOk, sendFail } from '../utils/apiResponse.js';
 import { toBannerDto } from '../serializers/bannerMapper.js';
 import { buildActiveBannerWhere } from '../services/bannerQuery.js';
+import { BANNER_QUEUE_ORDER, nextDisplayOrder } from '../services/bannerQueueService.js';
 import { validateBannerPayload } from '../utils/bannerValidation.js';
 
 async function fetchActiveBanners(city, limit = 20, placement) {
   const rows = await AdvertisementBanner.findAll({
     where: buildActiveBannerWhere(city, placement),
-    order: [
-      ['priority', 'DESC'],
-      ['createdAt', 'DESC'],
-    ],
+    order: BANNER_QUEUE_ORDER,
     limit: Math.min(Math.max(Number(limit) || 20, 1), 50),
   });
   return rows.map(toBannerDto);
@@ -42,10 +40,7 @@ export async function listHomeBanners(req, res, next) {
 export async function adminListBanners(req, res, next) {
   try {
     const rows = await AdvertisementBanner.findAll({
-      order: [
-        ['priority', 'DESC'],
-        ['createdAt', 'DESC'],
-      ],
+      order: BANNER_QUEUE_ORDER,
     });
     return sendOk(res, rows.map(toBannerDto));
   } catch (e) {
@@ -59,19 +54,25 @@ export async function adminCreateBanner(req, res, next) {
     if (errors.length) return sendFail(res, errors.join('; '), 400);
 
     const b = req.body;
+    const placement = b.placement || 'home_dashboard';
+    const displayOrder =
+      b.displayOrder != null && Number.isFinite(Number(b.displayOrder))
+        ? Number(b.displayOrder)
+        : await nextDisplayOrder(placement);
     const row = await AdvertisementBanner.create({
       id: b.id?.trim() || `banner_${randomUUID().slice(0, 8)}`,
       title: String(b.title).trim(),
       subtitle: b.subtitle?.trim() || null,
       imageUrl: b.imageUrl?.trim() || null,
       mediaType: (b.mediaType || 'image').toLowerCase() === 'video' ? 'video' : 'image',
-      placement: b.placement || 'home_dashboard',
+      placement,
       ctaText: (b.ctaText?.trim() || 'Book Now').slice(0, 80),
       redirectType: b.redirectType || 'none',
       redirectValue: b.redirectValue?.trim() || null,
       city: b.city?.trim() || null,
       isActive: b.isActive !== false && b.isActive !== 0,
       priority: Number(b.priority) || 0,
+      displayOrder,
       startDate: b.startDate ? new Date(b.startDate) : null,
       endDate: b.endDate ? new Date(b.endDate) : null,
       createdBy: req.adminId || null,
@@ -105,6 +106,7 @@ export async function adminUpdateBanner(req, res, next) {
     if (b.city !== undefined) patch.city = b.city?.trim() || null;
     if (b.isActive !== undefined) patch.isActive = !!(b.isActive === true || b.isActive === 1);
     if (b.priority !== undefined) patch.priority = Number(b.priority) || 0;
+    if (b.displayOrder !== undefined) patch.displayOrder = Number(b.displayOrder) || 0;
     if (b.startDate !== undefined) patch.startDate = b.startDate ? new Date(b.startDate) : null;
     if (b.endDate !== undefined) patch.endDate = b.endDate ? new Date(b.endDate) : null;
 

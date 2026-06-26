@@ -17,6 +17,7 @@ export function defineAdvertisementBanner(sequelize) {
       city: { type: DataTypes.STRING(120), allowNull: true },
       isActive: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true },
       priority: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+      displayOrder: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
       startDate: { type: DataTypes.DATE, allowNull: true },
       endDate: { type: DataTypes.DATE, allowNull: true },
       createdBy: { type: DataTypes.STRING(64), allowNull: true },
