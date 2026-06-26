@@ -65,6 +65,7 @@ const COLUMN_ALTERS = [
   "ALTER TABLE search_logs ADD COLUMN detail_text TEXT NULL",
   "ALTER TABLE advertisement_banners ADD COLUMN media_type VARCHAR(16) NOT NULL DEFAULT 'image'",
   "ALTER TABLE advertisement_banners ADD COLUMN placement VARCHAR(32) NOT NULL DEFAULT 'home_dashboard'",
+  "ALTER TABLE advertisement_banners ADD COLUMN display_order INT NOT NULL DEFAULT 0",
   "ALTER TABLE services ADD COLUMN premium_price DECIMAL(10,2) NULL",
   "ALTER TABLE admin_users ADD COLUMN permissions JSON NULL",
   "ALTER TABLE notifications ADD COLUMN expires_at DATETIME NULL",

@@ -20,7 +20,7 @@ export function isValidImageUrl(url) {
 export function isValidMediaUrl(url) {
   if (url == null || url === '') return false;
   const s = String(url).trim();
-  return URL_RE.test(s) || s.startsWith('data:image/');
+  return URL_RE.test(s) || s.startsWith('data:image/') || s.startsWith('data:video/');
 }
 
 export function validateBannerPayload(body, { partial = false } = {}) {

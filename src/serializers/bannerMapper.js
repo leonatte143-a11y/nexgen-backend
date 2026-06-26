@@ -13,6 +13,7 @@ export function toBannerDto(row) {
     city: row.city ?? null,
     isActive: !!row.isActive,
     priority: row.priority ?? 0,
+    displayOrder: row.displayOrder ?? 0,
     startDate: row.startDate ? row.startDate.toISOString() : null,
     endDate: row.endDate ? row.endDate.toISOString() : null,
     createdBy: row.createdBy ?? null,
