@@ -15,7 +15,7 @@ export function defineShop(sequelize) {
       longitude: { type: DataTypes.DECIMAL(10, 7), allowNull: true },
       gstOrLicense: { type: DataTypes.STRING(128), allowNull: true },
       leadPreference: { type: DataTypes.STRING(32), defaultValue: 'offline' },
-      photoUrl: { type: DataTypes.STRING(512), allowNull: true },
+      photoUrl: { type: DataTypes.TEXT, allowNull: true },
       rating: { type: DataTypes.DECIMAL(3, 2), defaultValue: 4.5 },
       verificationStatus: { type: DataTypes.STRING(32), defaultValue: 'pending' },
       isFeatured: { type: DataTypes.BOOLEAN, defaultValue: false },

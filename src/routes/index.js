@@ -14,6 +14,7 @@ import bannerRoutes from './banner.routes.js';
 import searchRoutes from './search.routes.js';
 import shopRoutes from './shop.routes.js';
 import configRoutes from './config.routes.js';
+import marketplaceRoutes from './marketplace.routes.js';
 
 const v1 = Router();
 
@@ -31,6 +32,7 @@ v1.use('/banners', bannerRoutes);
 v1.use('/search', searchRoutes);
 v1.use('/shops', shopRoutes);
 v1.use('/config', configRoutes);
+v1.use('/marketplace', marketplaceRoutes);
 // Favorites are under /users/me/favorites (user auth)
 v1.use('/users', favoriteRoutes);
 

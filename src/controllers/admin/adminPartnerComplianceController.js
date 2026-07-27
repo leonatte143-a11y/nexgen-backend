@@ -111,6 +111,34 @@ export async function archivePartner(req, res, next) {
   }
 }
 
+export async function listArchivedPartners(_req, res, next) {
+  try {
+    const rows = await ArchivedPartner.findAll({ order: [['archivedAt', 'DESC']], limit: 200 });
+    return sendOk(res, rows);
+  } catch (e) {
+    next(e);
+  }
+}
+
+export async function restorePartner(req, res, next) {
+  try {
+    const p = await Partner.findByPk(req.params.id);
+    if (!p) return sendFail(res, 'Partner not found', 404);
+    if (!p.archivedAt) return sendFail(res, 'Partner is not archived', 409);
+
+    await p.update({ archivedAt: null, accountStatus: 'active' });
+    await recordAdminAction(req.adminId, 'partner_restore', {
+      entityType: 'partner',
+      entityId: p.id,
+      meta: { name: p.name },
+      req,
+    });
+    return sendOk(res, toPartnerProfile(p), 'Partner restored');
+  } catch (e) {
+    next(e);
+  }
+}
+
 export async function unfreezePartner(req, res, next) {
   try {
     const p = await Partner.findByPk(req.params.id);

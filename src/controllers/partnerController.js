@@ -1,6 +1,7 @@
 import { randomInt, randomUUID } from 'crypto';
-import { Partner, Booking, PartnerServicePricing, User, PayoutQueue } from '../models/index.js';
+import { Partner, Booking, PartnerServicePricing, User, PayoutQueue, PartnerReferralEarning } from '../models/index.js';
 import { sendOk, sendFail } from '../utils/apiResponse.js';
+import { ensurePartnerReferralCode, findReferrerPartnerByCode } from '../utils/referralCode.js';
 import {
   toPartnerProfile,
   toEarningsSummary,
@@ -111,12 +112,15 @@ export async function upsertPartnerRegistration(body, { allowUpdate = true } = {
     throw err;
   }
   if (!existing) {
+    const referrer = await findReferrerPartnerByCode(body.referralCode, id);
     const p = await Partner.create({
       id,
       phone,
       ...fields,
       verificationStatus: fields.verificationStatus || 'Pending',
+      referredByPartnerId: referrer?.id || null,
     });
+    await ensurePartnerReferralCode(p);
     return { partner: p, created: true };
   }
   const upd = {
@@ -152,8 +156,34 @@ export async function getProfile(req, res, next) {
   try {
     const p = await Partner.findByPk(req.partnerId);
     if (!p) return sendFail(res, 'Partner not found', 404);
+    await ensurePartnerReferralCode(p);
     ctrlLog('PARTNER', 'getProfile', req);
     return sendOk(res, toPartnerProfile(p));
+  } catch (e) {
+    next(e);
+  }
+}
+
+export async function getReferralEarnings(req, res, next) {
+  try {
+    const p = await Partner.findByPk(req.partnerId);
+    if (!p) return sendFail(res, 'Partner not found', 404);
+    await ensurePartnerReferralCode(p);
+    const rows = await PartnerReferralEarning.findAll({
+      where: { referrerPartnerId: req.partnerId },
+      order: [['createdAt', 'DESC']],
+    });
+    const totalEarned = rows.reduce((sum, r) => sum + toNum(r.amount), 0);
+    return sendOk(res, {
+      referralCode: p.referralCode,
+      totalEarned,
+      earnings: rows.map((r) => ({
+        id: r.id,
+        bookingId: r.bookingId,
+        amount: toNum(r.amount),
+        createdAt: r.createdAt,
+      })),
+    });
   } catch (e) {
     next(e);
   }

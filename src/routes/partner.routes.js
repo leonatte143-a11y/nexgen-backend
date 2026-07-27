@@ -40,5 +40,6 @@ r.post('/pricing', c.addPricingRow);
 r.delete('/pricing/:id', c.deletePricingRow);
 r.post('/support/chat', support.startOrGetConversation);
 r.post('/support/chat/:id/messages', support.sendPartnerMessage);
+r.get('/referrals/earnings', c.getReferralEarnings);
 
 export default r;

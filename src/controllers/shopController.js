@@ -191,6 +191,7 @@ export async function applyShop(req, res, next) {
       longitude,
       gstOrLicense,
       leadPreference,
+      photoUrl,
     } = req.body;
     if (!shopName?.trim()) return sendFail(res, 'Shop name required', 400);
 
@@ -211,6 +212,7 @@ export async function applyShop(req, res, next) {
       longitude: longitude != null ? Number(longitude) : null,
       gstOrLicense: String(gstOrLicense || '').slice(0, 128) || null,
       leadPreference: normalizeLeadPreference(leadPreference),
+      photoUrl: String(photoUrl || '').trim().slice(0, 60000) || null,
       verificationStatus: 'pending',
       isActive: false,
       isFeatured: false,

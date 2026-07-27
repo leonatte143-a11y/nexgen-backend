@@ -68,6 +68,7 @@ export function toUserBooking(b, lineItems = []) {
     serviceId: b.serviceId,
     serviceName: b.serviceName,
     categoryLabel: b.categoryLabel,
+    partnerId: b.partnerId,
     partnerName: b.partnerName,
     partnerRating: toNum(b.partnerRating),
     status: b.userStatus,
@@ -160,6 +161,7 @@ export function toPartnerProfile(p) {
     serviceInnerRadiusKm: p.serviceInnerRadiusKm,
     serviceOuterRadiusKm: p.serviceOuterRadiusKm,
     allowOutOfStation: p.allowOutOfStation,
+    referralCode: p.referralCode || '',
   };
 }
 

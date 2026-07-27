@@ -75,7 +75,13 @@ const COLUMN_ALTERS = [
   "ALTER TABLE advertisement_banners ADD COLUMN geo_fence JSON NULL",
   "ALTER TABLE support_conversations ADD COLUMN claimed_by_admin_id VARCHAR(64) NULL",
   "ALTER TABLE support_conversations ADD COLUMN claimed_at DATETIME NULL",
+  "ALTER TABLE partners ADD COLUMN referral_code VARCHAR(32) NULL",
+  "ALTER TABLE partners ADD COLUMN referred_by_partner_id VARCHAR(64) NULL",
+  "ALTER TABLE partners ADD COLUMN referral_credited TINYINT(1) NOT NULL DEFAULT 0",
 ];
+
+/** Column type widenings — idempotent (MODIFY COLUMN never errors on rerun). */
+const COLUMN_MODIFICATIONS = ["ALTER TABLE shops MODIFY COLUMN photo_url TEXT NULL"];
 
 const CREATE_TABLES = [
   `CREATE TABLE IF NOT EXISTS emergency_requests (
@@ -151,7 +157,93 @@ const CREATE_TABLES = [
     created_at DATETIME NULL,
     updated_at DATETIME NULL
   )`,
+  `CREATE TABLE IF NOT EXISTS partner_referral_earnings (
+    id VARCHAR(64) PRIMARY KEY,
+    referrer_partner_id VARCHAR(64) NOT NULL,
+    referee_partner_id VARCHAR(64) NOT NULL,
+    booking_id VARCHAR(64) NOT NULL,
+    amount DECIMAL(10,2) NOT NULL,
+    created_at DATETIME NULL
+  )`,
+  `CREATE TABLE IF NOT EXISTS marketplace_categories (
+    id VARCHAR(64) PRIMARY KEY,
+    name VARCHAR(128) NOT NULL,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    created_at DATETIME NULL,
+    updated_at DATETIME NULL
+  )`,
+  `CREATE TABLE IF NOT EXISTS marketplace_listings (
+    id VARCHAR(64) PRIMARY KEY,
+    seller_role VARCHAR(16) NOT NULL,
+    seller_id VARCHAR(64) NOT NULL,
+    listing_type VARCHAR(16) NOT NULL DEFAULT 'sell',
+    category_id VARCHAR(64) NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    description TEXT NULL,
+    photos JSON NULL,
+    price DECIMAL(12,2) NULL,
+    deposit_amount DECIMAL(12,2) NULL,
+    rent_price_per_day DECIMAL(12,2) NULL,
+    city VARCHAR(64) NULL,
+    latitude DECIMAL(10,7) NULL,
+    longitude DECIMAL(10,7) NULL,
+    contact_phone VARCHAR(16) NULL,
+    status VARCHAR(16) NOT NULL DEFAULT 'active',
+    created_at DATETIME NULL,
+    updated_at DATETIME NULL
+  )`,
+  `CREATE TABLE IF NOT EXISTS marketplace_reports (
+    id VARCHAR(64) PRIMARY KEY,
+    listing_id VARCHAR(64) NOT NULL,
+    reporter_role VARCHAR(16) NOT NULL,
+    reporter_id VARCHAR(64) NOT NULL,
+    reason VARCHAR(500) NULL,
+    created_at DATETIME NULL
+  )`,
+  `CREATE TABLE IF NOT EXISTS marketplace_conversations (
+    id VARCHAR(64) PRIMARY KEY,
+    listing_id VARCHAR(64) NOT NULL,
+    buyer_role VARCHAR(16) NOT NULL,
+    buyer_id VARCHAR(64) NOT NULL,
+    seller_role VARCHAR(16) NOT NULL,
+    seller_id VARCHAR(64) NOT NULL,
+    status VARCHAR(32) NOT NULL DEFAULT 'open',
+    contact_shared TINYINT(1) NOT NULL DEFAULT 0,
+    last_message TEXT NULL,
+    last_message_at DATETIME NULL,
+    created_at DATETIME NULL,
+    updated_at DATETIME NULL
+  )`,
+  `CREATE TABLE IF NOT EXISTS marketplace_messages (
+    id VARCHAR(64) PRIMARY KEY,
+    conversation_id VARCHAR(64) NOT NULL,
+    sender_role VARCHAR(16) NOT NULL,
+    sender_id VARCHAR(64) NULL,
+    message TEXT NOT NULL,
+    created_at DATETIME NULL
+  )`,
 ];
+
+const MARKETPLACE_SEED_CATEGORIES = [
+  { id: 'construction_materials', name: 'Construction Materials' },
+  { id: 'heavy_tools', name: 'Heavy Tools' },
+  { id: 'furniture', name: 'Furniture' },
+  { id: 'vehicles', name: 'Vehicles' },
+  { id: 'electronics', name: 'Electronics' },
+];
+
+async function seedMarketplaceCategories(sequelize) {
+  for (const cat of MARKETPLACE_SEED_CATEGORIES) {
+    try {
+      await sequelize.query(
+        'INSERT IGNORE INTO marketplace_categories (id, name, is_active, created_at, updated_at) VALUES (?, ?, 1, NOW(), NOW())',
+        { replacements: [cat.id, cat.name] },
+      );
+    } catch {
+      /* table not ready yet or already seeded — safe to ignore */
+    }
+  }
+}
 
 /**
  * @param {import('sequelize').Sequelize} sequelize
@@ -165,6 +257,14 @@ export async function runColumnEnsurePass(sequelize) {
     if (ok) added += 1;
     else skipped += 1;
   }
+  for (const sql of COLUMN_MODIFICATIONS) {
+    try {
+      await sequelize.query(sql);
+      added += 1;
+    } catch {
+      skipped += 1;
+    }
+  }
   for (const sql of CREATE_TABLES) {
     try {
       await sequelize.query(sql);
@@ -173,5 +273,6 @@ export async function runColumnEnsurePass(sequelize) {
       skipped += 1;
     }
   }
+  await seedMarketplaceCategories(sequelize);
   return { added, skipped };
 }

@@ -1,4 +1,4 @@
-import { User } from '../models/index.js';
+import { User, Partner } from '../models/index.js';
 
 const DEFAULT_PREFIX = 'NEXGEN';
 
@@ -52,4 +52,40 @@ export async function ensureUserReferralCode(user) {
   user.referralCode = fallback;
   await user.save();
   return fallback;
+}
+
+/** Ensure partner has a unique referralCode; updates DB when missing or generic. */
+export async function ensurePartnerReferralCode(partner) {
+  const current = String(partner.referralCode || '').trim();
+  if (current) {
+    const taken = await Partner.findOne({ where: { referralCode: current }, attributes: ['id'] });
+    if (!taken || taken.id === partner.id) return current;
+  }
+
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const candidate =
+      attempt === 0
+        ? buildReferralCode({ firstName: partner.name, phone: partner.phone, id: partner.id })
+        : `${DEFAULT_PREFIX}-${slugPart(partner.name, 4)}-${String(partner.phone || partner.id).replace(/\D/g, '').slice(-4)}${attempt}`;
+    const exists = await Partner.findOne({ where: { referralCode: candidate }, attributes: ['id'] });
+    if (!exists || exists.id === partner.id) {
+      partner.referralCode = candidate;
+      await partner.save();
+      return candidate;
+    }
+  }
+
+  const fallback = `${DEFAULT_PREFIX}-${partner.id.slice(-8).toUpperCase()}`;
+  partner.referralCode = fallback;
+  await partner.save();
+  return fallback;
+}
+
+/** Find a referring partner by referral code, excluding self-referral. */
+export async function findReferrerPartnerByCode(code, excludePartnerId) {
+  const trimmed = String(code || '').trim();
+  if (!trimmed) return null;
+  const referrer = await Partner.findOne({ where: { referralCode: trimmed } });
+  if (!referrer || referrer.id === excludePartnerId) return null;
+  return referrer;
 }
