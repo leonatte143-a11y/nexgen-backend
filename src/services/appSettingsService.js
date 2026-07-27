@@ -35,3 +35,22 @@ export async function updateSettings(patch, adminId) {
   await row.update({ settingValue: merged });
   return merged;
 }
+
+const MAPS_KEY_SETTING = 'google_maps_api_key';
+
+export async function getMapsKeySetting() {
+  const row = await AppSetting.findOne({ where: { settingKey: MAPS_KEY_SETTING } });
+  if (!row) return { apiKey: null, updatedBy: null, updatedAt: null };
+  const v = row.settingValue || {};
+  return { apiKey: v.apiKey || null, updatedBy: v.updatedBy || null, updatedAt: row.updatedAt };
+}
+
+export async function setMapsKeySetting(apiKey, adminId) {
+  const value = { apiKey, updatedBy: adminId };
+  const [row] = await AppSetting.findOrCreate({
+    where: { settingKey: MAPS_KEY_SETTING },
+    defaults: { id: 'settings_maps_key', settingKey: MAPS_KEY_SETTING, settingValue: value },
+  });
+  await row.update({ settingValue: value });
+  return { apiKey, updatedBy: adminId, updatedAt: row.updatedAt };
+}

@@ -21,6 +21,8 @@ export function defineAdvertisementBanner(sequelize) {
       startDate: { type: DataTypes.DATE, allowNull: true },
       endDate: { type: DataTypes.DATE, allowNull: true },
       createdBy: { type: DataTypes.STRING(64), allowNull: true },
+      /** Optional geo-fence polygon: array of { lat, lng } points. Null/empty = no location restriction. */
+      geoFence: { type: DataTypes.JSON, allowNull: true },
     },
     {
       sequelize,

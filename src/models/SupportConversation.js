@@ -14,6 +14,9 @@ export function defineSupportConversation(sequelize) {
       lastMessage: { type: DataTypes.TEXT, allowNull: true },
       lastMessageAt: { type: DataTypes.DATE, allowNull: true },
       unreadCount: { type: DataTypes.INTEGER, defaultValue: 0 },
+      /** Admin who "joined" this conversation to provide support / resolve a dispute. */
+      claimedByAdminId: { type: DataTypes.STRING(64), allowNull: true },
+      claimedAt: { type: DataTypes.DATE, allowNull: true },
     },
     { sequelize, modelName: 'SupportConversation', tableName: 'support_conversations', timestamps: true },
   );

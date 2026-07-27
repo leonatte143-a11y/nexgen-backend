@@ -23,6 +23,8 @@ function humanizeAction(action, meta) {
     service_zone_establish: `Established service zone${meta?.city ? `: ${meta.city}` : ''}`,
     payout_generate: 'Generated Monday payout report',
     settings_update: 'Updated global settings',
+    maps_key_update: 'Updated Google Maps API key',
+    chat_join: meta?.label || 'Joined support conversation',
     price_update: `Changed service price${meta?.serviceName ? `: ${meta.serviceName}` : ''}`,
     partner_price_approve: meta?.label || 'Approved partner service price',
     partner_price_reject: meta?.label || 'Rejected partner service price',

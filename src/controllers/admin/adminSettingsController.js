@@ -1,12 +1,62 @@
-import { GeoZone } from '../../models/index.js';
+import { GeoZone, AdminUser } from '../../models/index.js';
 import { sendOk, sendFail } from '../../utils/apiResponse.js';
-import { getSettings, updateSettings } from '../../services/appSettingsService.js';
+import { getSettings, updateSettings, getMapsKeySetting, setMapsKeySetting } from '../../services/appSettingsService.js';
 import { recordAdminAction } from '../../utils/auditLog.js';
 import { randomUUID } from 'crypto';
 
 export async function getAppSettings(_req, res, next) {
   try {
     return sendOk(res, await getSettings());
+  } catch (e) {
+    next(e);
+  }
+}
+
+function maskApiKey(key) {
+  if (!key) return null;
+  const s = String(key);
+  if (s.length <= 10) return '*'.repeat(s.length);
+  return `${s.slice(0, 6)}...${'*'.repeat(4)}`;
+}
+
+export async function getMapsApiKeySetting(_req, res, next) {
+  try {
+    const { apiKey, updatedBy, updatedAt } = await getMapsKeySetting();
+    let updatedByName = null;
+    if (updatedBy) {
+      const admin = await AdminUser.findByPk(updatedBy, { attributes: ['name', 'email'] });
+      updatedByName = admin?.name || admin?.email || updatedBy;
+    }
+    return sendOk(res, {
+      maskedKey: maskApiKey(apiKey),
+      hasKey: Boolean(apiKey),
+      updatedBy: updatedByName,
+      updatedAt,
+    });
+  } catch (e) {
+    next(e);
+  }
+}
+
+export async function patchMapsApiKeySetting(req, res, next) {
+  try {
+    const apiKey = String(req.body?.apiKey ?? '').trim();
+    if (!apiKey) return sendFail(res, 'apiKey required', 400);
+    const { updatedAt } = await setMapsKeySetting(apiKey, req.adminId);
+    await recordAdminAction(req.adminId, 'maps_key_update', {
+      meta: { label: 'Updated Google Maps API key', maskedKey: maskApiKey(apiKey) },
+    });
+    const admin = await AdminUser.findByPk(req.adminId, { attributes: ['name', 'email'] });
+    return sendOk(
+      res,
+      {
+        maskedKey: maskApiKey(apiKey),
+        hasKey: true,
+        updatedBy: admin?.name || admin?.email || req.adminId,
+        updatedAt,
+      },
+      'Maps API key updated',
+    );
   } catch (e) {
     next(e);
   }

@@ -6,6 +6,7 @@ import * as emergency from '../controllers/emergencyController.js';
 import * as shopC from '../controllers/shopController.js';
 import { listPartnerReviews } from '../controllers/reviewController.js';
 import { listPartnerTestimonials } from '../controllers/testimonialController.js';
+import * as support from '../controllers/partnerSupportController.js';
 
 const r = Router();
 
@@ -37,5 +38,7 @@ r.get('/pricing', c.getPricingRows);
 r.put('/pricing/:id', c.updatePricingRow);
 r.post('/pricing', c.addPricingRow);
 r.delete('/pricing/:id', c.deletePricingRow);
+r.post('/support/chat', support.startOrGetConversation);
+r.post('/support/chat/:id/messages', support.sendPartnerMessage);
 
 export default r;

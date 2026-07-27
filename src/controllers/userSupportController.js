@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
-import { SupportTicket, Booking } from '../models/index.js';
+import { SupportTicket, Booking, SupportConversation } from '../models/index.js';
 import { sendOk, sendFail } from '../utils/apiResponse.js';
+import { getOrCreateConversation, listMessages, sendMessage } from '../services/chatService.js';
 
 export async function listMyTickets(req, res, next) {
   try {
@@ -42,6 +43,38 @@ export async function createTicket(req, res, next) {
     });
 
     return sendOk(res, ticket, 'Support ticket created');
+  } catch (e) {
+    next(e);
+  }
+}
+
+export async function startOrGetConversation(req, res, next) {
+  try {
+    const { bookingId } = req.body || {};
+    let partnerId = null;
+    if (bookingId) {
+      const booking = await Booking.findOne({ where: { id: bookingId, userId: req.userId } });
+      if (booking) partnerId = booking.partnerId;
+    }
+    const conv = await getOrCreateConversation({ userId: req.userId, partnerId, bookingId, channel: 'customer' });
+    const messages = await listMessages(conv.id);
+    return sendOk(res, { conversation: conv, messages });
+  } catch (e) {
+    next(e);
+  }
+}
+
+export async function sendUserMessage(req, res, next) {
+  try {
+    const conv = await SupportConversation.findOne({ where: { id: req.params.id, userId: req.userId } });
+    if (!conv) return sendFail(res, 'Conversation not found', 404);
+    const row = await sendMessage({
+      conversationId: conv.id,
+      senderType: 'user',
+      senderId: req.userId,
+      message: req.body?.message,
+    });
+    return sendOk(res, row, 'Message sent');
   } catch (e) {
     next(e);
   }
