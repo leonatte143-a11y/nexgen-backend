@@ -72,6 +72,9 @@ const COLUMN_ALTERS = [
   "ALTER TABLE notifications ADD COLUMN audience VARCHAR(32) NULL",
   "ALTER TABLE notification_campaigns ADD COLUMN audience VARCHAR(32) NOT NULL DEFAULT 'all_users'",
   "ALTER TABLE notification_campaigns ADD COLUMN expires_at DATETIME NULL",
+  "ALTER TABLE advertisement_banners ADD COLUMN geo_fence JSON NULL",
+  "ALTER TABLE support_conversations ADD COLUMN claimed_by_admin_id VARCHAR(64) NULL",
+  "ALTER TABLE support_conversations ADD COLUMN claimed_at DATETIME NULL",
 ];
 
 const CREATE_TABLES = [

@@ -4,6 +4,7 @@ import app from './app.js';
 import { connectDatabase, syncDatabase, sequelize } from './models/index.js';
 import { runColumnEnsurePass } from './utils/columnMaintenance.js';
 import { databaseConfig } from './config/database.js';
+import { initChatSocket } from './realtime/chatSocket.js';
 
 const port = parseInt(process.env.PORT || '4000', 10);
 const host = process.env.HOST || '0.0.0.0';
@@ -56,6 +57,9 @@ async function main() {
   const server = app.listen(port, host, () => {
     console.log(`NEXGEN API listening on http://${host}:${port}`);
   });
+
+  initChatSocket(server);
+  console.log('[NEXGEN] Super-Chat Socket.IO attached');
 
   server.on('error', (err) => {
     if (err && err.code === 'EADDRINUSE') {

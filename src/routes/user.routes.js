@@ -12,5 +12,7 @@ r.delete('/me', c.deleteMe);
 r.post('/emergency', emergency.createEmergencyRequest);
 r.get('/support/tickets', support.listMyTickets);
 r.post('/support/tickets', support.createTicket);
+r.post('/support/chat', support.startOrGetConversation);
+r.post('/support/chat/:id/messages', support.sendUserMessage);
 
 export default r;

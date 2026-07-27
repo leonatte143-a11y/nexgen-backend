@@ -1,3 +1,5 @@
+import { isValidGeoFence } from './geoFence.js';
+
 export const BANNER_REDIRECT_TYPES = [
   'category',
   'service',
@@ -53,12 +55,16 @@ export function validateBannerPayload(body, { partial = false } = {}) {
     }
     if (rt === 'external') {
       const v = String(b.redirectValue ?? '').trim();
-      if (!URL_RE.test(v)) errors.push('redirectValue must be a valid URL for external redirects');
+      if (v && !URL_RE.test(v)) errors.push('redirectValue must be a valid URL for external redirects');
     }
     if (['category', 'service', 'partner', 'event'].includes(rt)) {
       const v = String(b.redirectValue ?? '').trim();
       if (!v) errors.push('redirectValue is required for this redirect type');
     }
+  }
+
+  if (b.geoFence !== undefined && !isValidGeoFence(b.geoFence)) {
+    errors.push('geoFence must be an array of at least 3 { lat, lng } points, or empty/null');
   }
 
   if (b.priority !== undefined) {

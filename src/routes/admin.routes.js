@@ -146,6 +146,8 @@ r.post('/notifications/broadcast', requirePermission(P.NOTIFICATIONS_BROADCAST),
 r.get('/chats', requirePermission(P.CHAT_MONITOR), chat.listChats);
 r.get('/chats/alerts', requirePermission(P.CHAT_MONITOR), chat.chatAlerts);
 r.get('/chats/:id', requirePermission(P.CHAT_MONITOR), chat.getChat);
+r.post('/chats/:id/join', requirePermission(P.CHAT_MONITOR), chat.joinChat);
+r.post('/chats/:id/messages', requirePermission(P.CHAT_MONITOR), chat.sendAdminMessage);
 r.put('/chats/settings', requirePermission(P.SETTINGS_MANAGE), chat.updateChatSettings);
 
 // Fraud
@@ -155,6 +157,8 @@ r.post('/fraud-flags/scan', requirePermission(P.FRAUD_VIEW), fraud.scanFraudSign
 // Settings & geo
 r.get('/settings', requirePermission(P.SETTINGS_MANAGE), settings.getAppSettings);
 r.put('/settings', requirePermission(P.SETTINGS_MANAGE), settings.patchAppSettings);
+r.get('/settings/maps-key', requirePermission(P.SETTINGS_MANAGE), settings.getMapsApiKeySetting);
+r.put('/settings/maps-key', requirePermission(P.SETTINGS_MANAGE), settings.patchMapsApiKeySetting);
 r.get('/geo/zones', requirePermission(P.SETTINGS_MANAGE, P.DEMAND_ANALYTICS), settings.listGeoZones);
 r.post('/geo/zones', requirePermission(P.ESTABLISH_LOCATION), settings.upsertGeoZone);
 r.post('/geo/surge', requirePermission(P.SETTINGS_MANAGE), settings.setSurge);

@@ -5,21 +5,35 @@ import { toBannerDto } from '../serializers/bannerMapper.js';
 import { buildActiveBannerWhere } from '../services/bannerQuery.js';
 import { BANNER_QUEUE_ORDER, nextDisplayOrder } from '../services/bannerQueueService.js';
 import { validateBannerPayload } from '../utils/bannerValidation.js';
+import { isPointInPolygon } from '../utils/geoFence.js';
 
-async function fetchActiveBanners(city, limit = 20, placement) {
+function parseCoords(req) {
+  const lat = Number(req.query.lat);
+  const lng = Number(req.query.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  return { latitude: lat, longitude: lng };
+}
+
+async function fetchActiveBanners(city, limit = 20, placement, coords) {
   const rows = await AdvertisementBanner.findAll({
     where: buildActiveBannerWhere(city, placement),
     order: BANNER_QUEUE_ORDER,
     limit: Math.min(Math.max(Number(limit) || 20, 1), 50),
   });
-  return rows.map(toBannerDto);
+  const filtered = rows.filter((row) => {
+    const fence = row.geoFence;
+    if (!Array.isArray(fence) || fence.length < 3) return true;
+    if (!coords) return false;
+    return isPointInPolygon(coords, fence);
+  });
+  return filtered.map(toBannerDto);
 }
 
 export async function listBanners(req, res, next) {
   try {
     const city = req.query.city;
     const limit = req.query.limit;
-    const data = await fetchActiveBanners(city, limit);
+    const data = await fetchActiveBanners(city, limit, undefined, parseCoords(req));
     return sendOk(res, data);
   } catch (e) {
     next(e);
@@ -30,7 +44,7 @@ export async function listHomeBanners(req, res, next) {
   try {
     const city = req.query.city;
     const placement = req.query.placement || 'home_dashboard';
-    const data = await fetchActiveBanners(city, 10, placement);
+    const data = await fetchActiveBanners(city, 10, placement, parseCoords(req));
     return sendOk(res, data);
   } catch (e) {
     next(e);
@@ -76,6 +90,7 @@ export async function adminCreateBanner(req, res, next) {
       startDate: b.startDate ? new Date(b.startDate) : null,
       endDate: b.endDate ? new Date(b.endDate) : null,
       createdBy: req.adminId || null,
+      geoFence: Array.isArray(b.geoFence) && b.geoFence.length >= 3 ? b.geoFence : null,
     });
     return sendOk(res, toBannerDto(row), 'Banner created', 201);
   } catch (e) {
@@ -109,6 +124,9 @@ export async function adminUpdateBanner(req, res, next) {
     if (b.displayOrder !== undefined) patch.displayOrder = Number(b.displayOrder) || 0;
     if (b.startDate !== undefined) patch.startDate = b.startDate ? new Date(b.startDate) : null;
     if (b.endDate !== undefined) patch.endDate = b.endDate ? new Date(b.endDate) : null;
+    if (b.geoFence !== undefined) {
+      patch.geoFence = Array.isArray(b.geoFence) && b.geoFence.length >= 3 ? b.geoFence : null;
+    }
 
     await row.update(patch);
     return sendOk(res, toBannerDto(row), 'Banner updated');

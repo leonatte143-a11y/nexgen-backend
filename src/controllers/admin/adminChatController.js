@@ -1,6 +1,8 @@
 import { Op } from 'sequelize';
 import { SupportConversation, SupportMessage, ChatSetting } from '../../models/index.js';
-import { sendOk } from '../../utils/apiResponse.js';
+import { sendOk, sendFail } from '../../utils/apiResponse.js';
+import { sendMessage, claimConversation } from '../../services/chatService.js';
+import { recordAdminAction } from '../../utils/auditLog.js';
 
 const DEFAULT_FORBIDDEN = ['pay me cash', 'offline', 'mobile number', 'direct payment'];
 
@@ -68,6 +70,36 @@ export async function chatAlerts(_req, res, next) {
     }
     return sendOk(res, alerts.slice(0, 50), 'ok');
   } catch (e) {
+    next(e);
+  }
+}
+
+export async function joinChat(req, res, next) {
+  try {
+    const conv = await claimConversation(req.params.id, req.adminId);
+    await recordAdminAction(req.adminId, 'chat_join', {
+      entityType: 'support_conversation',
+      entityId: conv.id,
+      meta: { label: 'Joined support conversation' },
+    });
+    return sendOk(res, conv, 'Joined conversation');
+  } catch (e) {
+    if (e.status) return sendFail(res, e.message, e.status);
+    next(e);
+  }
+}
+
+export async function sendAdminMessage(req, res, next) {
+  try {
+    const row = await sendMessage({
+      conversationId: req.params.id,
+      senderType: 'admin',
+      senderId: req.adminId,
+      message: req.body?.message,
+    });
+    return sendOk(res, row, 'Message sent');
+  } catch (e) {
+    if (e.status) return sendFail(res, e.message, e.status);
     next(e);
   }
 }

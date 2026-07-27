@@ -13,6 +13,7 @@ import favoriteRoutes from './favorite.routes.js';
 import bannerRoutes from './banner.routes.js';
 import searchRoutes from './search.routes.js';
 import shopRoutes from './shop.routes.js';
+import configRoutes from './config.routes.js';
 
 const v1 = Router();
 
@@ -29,6 +30,7 @@ v1.use('/academy', academyRoutes);
 v1.use('/banners', bannerRoutes);
 v1.use('/search', searchRoutes);
 v1.use('/shops', shopRoutes);
+v1.use('/config', configRoutes);
 // Favorites are under /users/me/favorites (user auth)
 v1.use('/users', favoriteRoutes);
 

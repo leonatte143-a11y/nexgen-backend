@@ -17,6 +17,7 @@ export function toBannerDto(row) {
     startDate: row.startDate ? row.startDate.toISOString() : null,
     endDate: row.endDate ? row.endDate.toISOString() : null,
     createdBy: row.createdBy ?? null,
+    geoFence: row.geoFence ?? null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
