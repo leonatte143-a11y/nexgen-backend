@@ -36,6 +36,7 @@ export const PERMISSIONS = {
   FRAUD_VIEW: 'fraud:view',
   SHOPS_MANAGE: 'shops:manage',
   SHOPS_VERIFY: 'shops:verify',
+  MARKETPLACE_MODERATE: 'marketplace:moderate',
 };
 
 /** Maps legacy super_admin → admin privileges. */
@@ -63,6 +64,7 @@ export const ROLE_PERMISSIONS = {
     PERMISSIONS.PRICING_MANAGE,
     PERMISSIONS.SERVICES_MANAGE,
     PERMISSIONS.SHOPS_VERIFY,
+    PERMISSIONS.PARTNERS_COMPLIANCE,
   ],
   hr: [
     PERMISSIONS.STAFF_MANAGE,
@@ -82,6 +84,7 @@ export const ROLE_PERMISSIONS = {
     PERMISSIONS.BOOKINGS_MANAGE,
     PERMISSIONS.CHAT_MONITOR,
     PERMISSIONS.SUPPORT_MANAGE,
+    PERMISSIONS.MARKETPLACE_MODERATE,
   ],
   recruitment_exec: [
     PERMISSIONS.KYC_MANAGE,

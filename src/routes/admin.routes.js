@@ -25,6 +25,7 @@ import * as partnerPrices from '../controllers/admin/adminPartnerPricesControlle
 import * as staff from '../controllers/admin/adminStaffController.js';
 import * as shops from '../controllers/admin/adminShopsController.js';
 import * as meta from '../controllers/admin/adminMetaController.js';
+import * as marketplace from '../controllers/admin/adminMarketplaceController.js';
 
 const r = Router();
 r.use(requireAdmin);
@@ -69,6 +70,8 @@ r.post('/partners/:id/freeze', requirePermission(P.PARTNERS_COMPLIANCE), complia
 r.post('/partners/:id/unfreeze', requirePermission(P.PARTNERS_COMPLIANCE), compliance.unfreezePartner);
 r.post('/partners/:id/block', requirePermission(P.PARTNERS_COMPLIANCE), compliance.blockPartner);
 r.post('/partners/:id/archive', requirePermission(P.PARTNERS_COMPLIANCE), compliance.archivePartner);
+r.post('/partners/:id/restore', requirePermission(P.PARTNERS_COMPLIANCE), compliance.restorePartner);
+r.get('/partners/archived', requirePermission(P.PARTNERS_COMPLIANCE), compliance.listArchivedPartners);
 r.get('/hover-meta', requirePermission(P.DASHBOARD_VIEW, P.PARTNERS_MANAGE, P.USERS_MANAGE, P.STAFF_MANAGE), meta.getHoverMeta);
 r.get('/partners/strike-board', requirePermission(P.PARTNERS_COMPLIANCE), compliance.strikeBoard);
 
@@ -179,5 +182,11 @@ r.post('/shops/:id/featured', requirePermission(P.SHOPS_MANAGE), shops.setFeatur
 r.get('/shop-categories', requirePermission(P.SHOPS_VERIFY, P.SHOPS_MANAGE), shops.listCategories);
 r.post('/shop-categories', requirePermission(P.SHOPS_MANAGE), shops.createCategory);
 r.put('/shop-categories/:id', requirePermission(P.SHOPS_MANAGE), shops.updateCategory);
+
+// P2P Marketplace moderation
+r.get('/marketplace/listings', requirePermission(P.MARKETPLACE_MODERATE), marketplace.adminListListings);
+r.get('/marketplace/reports', requirePermission(P.MARKETPLACE_MODERATE), marketplace.adminListReports);
+r.post('/marketplace/listings/:id/ban', requirePermission(P.MARKETPLACE_MODERATE), marketplace.adminBanListing);
+r.delete('/marketplace/listings/:id', requirePermission(P.MARKETPLACE_MODERATE), marketplace.adminDeleteListing);
 
 export default r;

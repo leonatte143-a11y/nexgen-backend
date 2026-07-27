@@ -1,7 +1,8 @@
-import { randomInt } from 'crypto';
-import { User, Service, Partner, Booking, Review } from '../models/index.js';
+import { randomInt, randomUUID } from 'crypto';
+import { User, Service, Partner, Booking, Review, PartnerReferralEarning } from '../models/index.js';
 import { sendOk, sendFail } from '../utils/apiResponse.js';
 import { toUserBooking } from '../serializers/mappers.js';
+import { toNum } from '../serializers/formatters.js';
 import {
   computeBill,
   CANCELLATION_FEE_USER,
@@ -280,6 +281,7 @@ export async function confirmPayment(req, res, next) {
     const p = await Partner.findByPk(b.partnerId);
     if (p) {
       const share = toNum(b.partnerShare);
+      const isFirstJob = !p.completedJobsCount;
       await p.update({
         jobsCompleted: p.jobsCompleted + 1,
         completedJobsCount: (p.completedJobsCount || 0) + 1,
@@ -288,6 +290,28 @@ export async function confirmPayment(req, res, next) {
         lifetimeEarnings: toNum(p.lifetimeEarnings) + share,
         walletBalance: toNum(p.walletBalance) + share,
       });
+
+      // Referral Engine: referrer earns 50% of the referee's first-job commission.
+      if (isFirstJob && p.referredByPartnerId && !p.referralCredited) {
+        const referrer = await Partner.findByPk(p.referredByPartnerId);
+        if (referrer) {
+          const referralAmount = Math.round(toNum(b.adminCommission) * 0.5 * 100) / 100;
+          if (referralAmount > 0) {
+            await referrer.update({
+              walletBalance: toNum(referrer.walletBalance) + referralAmount,
+              lifetimeEarnings: toNum(referrer.lifetimeEarnings) + referralAmount,
+            });
+            await PartnerReferralEarning.create({
+              id: `refearn_${randomUUID().slice(0, 12)}`,
+              referrerPartnerId: referrer.id,
+              refereePartnerId: p.id,
+              bookingId: b.id,
+              amount: referralAmount,
+            });
+          }
+        }
+        await p.update({ referralCredited: true });
+      }
     }
     return sendOk(res, await bookingWithLineItems(b), 'Payment confirmed');
   } catch (e) {

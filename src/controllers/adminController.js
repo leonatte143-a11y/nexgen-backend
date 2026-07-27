@@ -1,6 +1,7 @@
 import { Category, Service, User, Partner } from '../models/index.js';
 import { sendOk, sendFail } from '../utils/apiResponse.js';
 import { toCatalogService, toServiceBucket } from '../serializers/mappers.js';
+import { recordAdminAction } from '../utils/auditLog.js';
 
 export async function createCategory(req, res, next) {
   try {
@@ -65,6 +66,12 @@ export async function deleteService(req, res, next) {
     const s = await Service.findByPk(req.params.id);
     if (!s) return sendFail(res, 'Service not found', 404);
     await s.update({ isActive: false });
+    await recordAdminAction(req.adminId, 'service_delete', {
+      entityType: 'service',
+      entityId: s.id,
+      meta: { label: `Archived service: ${s.name}` },
+      req,
+    });
     return sendOk(res, { id: req.params.id, archived: true }, 'Service archived');
   } catch (e) {
     next(e);

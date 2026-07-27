@@ -38,6 +38,9 @@ export function definePartner(sequelize) {
       rewardPoints: { type: DataTypes.INTEGER, defaultValue: 0 },
       latitude: { type: DataTypes.DECIMAL(10, 7), allowNull: true },
       longitude: { type: DataTypes.DECIMAL(10, 7), allowNull: true },
+      referralCode: { type: DataTypes.STRING(32), allowNull: true },
+      referredByPartnerId: { type: DataTypes.STRING(64), allowNull: true },
+      referralCredited: { type: DataTypes.BOOLEAN, defaultValue: false },
     },
     {
       sequelize,

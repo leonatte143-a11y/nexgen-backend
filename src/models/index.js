@@ -40,6 +40,12 @@ import { defineShop } from './Shop.js';
 import { defineTrendingCategory } from './TrendingCategory.js';
 import { defineArchivedPartner } from './ArchivedPartner.js';
 import { defineNotificationCampaign } from './NotificationCampaign.js';
+import { definePartnerReferralEarning } from './PartnerReferralEarning.js';
+import { defineMarketplaceCategory } from './MarketplaceCategory.js';
+import { defineMarketplaceListing } from './MarketplaceListing.js';
+import { defineMarketplaceReport } from './MarketplaceReport.js';
+import { defineMarketplaceConversation } from './MarketplaceConversation.js';
+import { defineMarketplaceMessage } from './MarketplaceMessage.js';
 
 export const User = defineUser(sequelize);
 export const Partner = definePartner(sequelize);
@@ -80,6 +86,12 @@ export const Shop = defineShop(sequelize);
 export const TrendingCategory = defineTrendingCategory(sequelize);
 export const ArchivedPartner = defineArchivedPartner(sequelize);
 export const NotificationCampaign = defineNotificationCampaign(sequelize);
+export const PartnerReferralEarning = definePartnerReferralEarning(sequelize);
+export const MarketplaceCategory = defineMarketplaceCategory(sequelize);
+export const MarketplaceListing = defineMarketplaceListing(sequelize);
+export const MarketplaceReport = defineMarketplaceReport(sequelize);
+export const MarketplaceConversation = defineMarketplaceConversation(sequelize);
+export const MarketplaceMessage = defineMarketplaceMessage(sequelize);
 
 Service.belongsTo(Category, { foreignKey: 'categoryId', as: 'category' });
 Service.belongsTo(Partner, { foreignKey: 'partnerId', as: 'partner' });
