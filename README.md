@@ -1,4 +1,4 @@
-# NEXGEN API (Node.js + Express + MySQL + Sequelize)
+﻿# KAIRO API (Node.js + Express + MySQL + Sequelize)
 
 Backend derived from the **React Native** app’s service contracts in `../mobile-app/src/services/`. The Expo app lives in `../mobile-app/`.
 
@@ -12,7 +12,7 @@ Backend derived from the **React Native** app’s service contracts in `../mobil
 
 ## Setup
 
-1. Create MySQL database: `CREATE DATABASE nexgen;`
+1. Create MySQL database: `CREATE DATABASE kairo;`
 2. `cd backend`
 3. `npm install`
 4. Copy `.env.example` to `.env` and set `DB_USER`, `DB_PASS` (or `DB_PASSWORD`), and JWT secrets. The server **refuses to start** unless every role can resolve a signing key: set `JWT_USER_SECRET`, `JWT_PARTNER_SECRET`, and `JWT_ADMIN_SECRET`, **or** set `JWT_SECRET` alone as a shared fallback for all roles.
@@ -44,8 +44,8 @@ npm run db:setup     # runs both migrate and seed
 
 Check Railway logs to confirm:
 ```
-[NEXGEN] ✓ Database migration complete
-[NEXGEN] Database connected
+[KAIRO] ✓ Database migration complete
+[KAIRO] Database connected
 ```
 
 ### Verifying the setup
@@ -55,7 +55,7 @@ Check Railway logs to confirm:
 3. Run a test:
    ```bash
    curl https://your-railway-backend-url/health
-   # Expected: { "success": true, "data": { "status": "ok" }, "message": "NEXGEN API" }
+   # Expected: { "success": true, "data": { "status": "ok" }, "message": "KAIRO API" }
    ```
 4. Redeploy backend service (if not automatic).
 5. Mobile app can now call `https://your-railway-backend-url/api/v1/...`.

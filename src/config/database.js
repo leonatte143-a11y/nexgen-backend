@@ -1,8 +1,8 @@
-import { Sequelize } from 'sequelize';
+﻿import { Sequelize } from 'sequelize';
 import { dbLog, isDevLoggingEnabled } from '../utils/devLogger.js';
 
 const isRailwayEnvironment = Boolean(
-  process.env.NEXGEN_RAILWAY === 'true' ||
+  process.env.KAIRO_RAILWAY === 'true' ||
   process.env.RAILWAY ||
   process.env.RAILWAY_ENV ||
   process.env.RAILWAY_GIT_BRANCH ||
@@ -94,7 +94,7 @@ const DB_NAME = source === 'DATABASE_URL'
   ? parsedUrlDatabase
   : source === 'MYSQL variables'
   ? railwayDbName
-  : localDbName || railwayDbName || 'nexgen';
+  : localDbName || railwayDbName || 'kairo';
 
 const DB_USER = source === 'DATABASE_URL'
   ? (databaseUrl ? new URL(databaseUrl).username : undefined)

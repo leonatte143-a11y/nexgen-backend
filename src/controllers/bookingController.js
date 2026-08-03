@@ -1,4 +1,4 @@
-import { randomInt, randomUUID } from 'crypto';
+﻿import { randomInt, randomUUID } from 'crypto';
 import { User, Service, Partner, Booking, Review, PartnerReferralEarning } from '../models/index.js';
 import { sendOk, sendFail } from '../utils/apiResponse.js';
 import { toUserBooking } from '../serializers/mappers.js';
@@ -158,7 +158,7 @@ export async function createBooking(req, res, next) {
     const bill = computeBill(itemsSubtotal, visitingFee);
     let promoDiscount = 0;
     let totalAmount = bill.total;
-    if (String(promoCode || '').toUpperCase() === 'NEXGEN2026') {
+    if (String(promoCode || '').toUpperCase() === 'KAIRO2026') {
       promoDiscount = 50;
       totalAmount = Math.max(0, totalAmount - promoDiscount);
     }
@@ -170,7 +170,7 @@ export async function createBooking(req, res, next) {
         itemsSubtotal +
         visitingFee +
         Math.round((itemsSubtotal + visitingFee) * 0.18) -
-        (String(promoCode || '').toUpperCase() === 'NEXGEN2026' ? 50 : 0);
+        (String(promoCode || '').toUpperCase() === 'KAIRO2026' ? 50 : 0);
       const tolerance = Math.max(2, Math.round(withGst * 0.02));
       if (Math.abs(got - expected) > tolerance && Math.abs(got - withGst) > tolerance) {
         return sendFail(res, 'Booking total mismatch. Please refresh and try again.', 400);

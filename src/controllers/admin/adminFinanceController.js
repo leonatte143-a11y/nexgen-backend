@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+﻿import { randomUUID } from 'crypto';
 import { Op } from 'sequelize';
 import { AdminUser, StaffProfile, StaffPayroll, Partner, PayoutQueue, Settlement } from '../../models/index.js';
 import { sendOk } from '../../utils/apiResponse.js';
@@ -26,7 +26,7 @@ export async function listFinancePayouts(_req, res, next) {
         partnerName: p.name,
         totalWorkDone: p.completedJobsCount || p.jobsCompleted || 0,
         grossEarnings: gross,
-        nexgenCommission: commission,
+        kairoCommission: commission,
         processingFee: PROCESSING_FEE,
         finalPayout,
         status: queue.find((q) => q.partnerId === p.id)?.status || 'eligible',
@@ -75,7 +75,7 @@ export async function generateFinancePayout(req, res, next) {
     }
     await recordAdminAction(req.adminId, 'payout_generate', { meta: { count: rows.length, label: 'Monday settlement' }, req });
     const csv = [
-      'partner_name,gross,nexgen_10pct,processing_fee,final_payout,status',
+      'partner_name,gross,kairo_10pct,processing_fee,final_payout,status',
       ...rows.map((r) => {
         const p = partners.find((x) => x.id === r.partnerId);
         const gross = toNum(p?.walletBalance) + toNum(r.amount);

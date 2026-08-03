@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+﻿import { randomUUID } from 'crypto';
 import { Op } from 'sequelize';
 import { Category, Service, Partner } from '../../models/index.js';
 import { sendOk, sendFail } from '../../utils/apiResponse.js';
@@ -6,7 +6,7 @@ import { toCatalogService, toServiceBucket } from '../../serializers/mappers.js'
 import { recordAdminAction } from '../../utils/auditLog.js';
 import { toNum } from '../../serializers/formatters.js';
 
-const CATALOG_PARTNER_ID = 'partner_nexgen_catalog';
+const CATALOG_PARTNER_ID = 'partner_kairo_catalog';
 
 async function ensureCatalogPartner() {
   const [partner] = await Partner.findOrCreate({
@@ -14,7 +14,7 @@ async function ensureCatalogPartner() {
     defaults: {
       id: CATALOG_PARTNER_ID,
       phone: '0000000001',
-      name: 'NEXGEN Catalog',
+      name: 'KAIRO Catalog',
       photoUrl: '',
       rating: 5,
       jobsCompleted: 0,

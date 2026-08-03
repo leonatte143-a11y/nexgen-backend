@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Must be imported first from `index.js` so `.env` is loaded before other modules read `process.env`.
  * Resolves `.env` from the backend package root (next to `package.json`), not only `process.cwd()`.
  */
@@ -30,7 +30,7 @@ const isRailway = Boolean(
 );
 
 // Expose detection to the rest of the app.
-process.env.NEXGEN_RAILWAY = isRailway ? 'true' : 'false';
+process.env.KAIRO_RAILWAY = isRailway ? 'true' : 'false';
 
 // Only attempt to load a local .env when not running on Railway (local dev).
 // Also allow forcing a local .env load by setting DOTENV_CONFIG_PATH.
@@ -38,18 +38,18 @@ if (!isRailway || process.env.DOTENV_CONFIG_PATH) {
   const result = dotenv.config({ path: candidateEnvPath });
   if (result.parsed) {
     // eslint-disable-next-line no-console
-    console.log('[NEXGEN] Loaded local .env from', candidateEnvPath);
+    console.log('[KAIRO] Loaded local .env from', candidateEnvPath);
   } else if (result.error && result.error.code !== 'ENOENT') {
     // eslint-disable-next-line no-console
-    console.warn('[NEXGEN] Could not read .env file:', result.error.message);
+    console.warn('[KAIRO] Could not read .env file:', result.error.message);
   } else if (!result.parsed) {
     // No .env present — only a concern in local development
     if (!isRailway) {
       // eslint-disable-next-line no-console
-      console.warn('[NEXGEN] No .env file found at', candidateEnvPath);
+      console.warn('[KAIRO] No .env file found at', candidateEnvPath);
     }
   }
 } else {
   // eslint-disable-next-line no-console
-  console.log('[NEXGEN] Running on Railway (or detected host). Using platform environment variables.');
+  console.log('[KAIRO] Running on Railway (or detected host). Using platform environment variables.');
 }

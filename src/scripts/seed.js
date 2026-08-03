@@ -1,4 +1,4 @@
-import '../loadEnv.js';
+﻿import '../loadEnv.js';
 import bcrypt from 'bcryptjs';
 import { randomInt } from 'crypto';
 import {
@@ -53,7 +53,7 @@ async function run() {
   await syncDatabase({ alter: false });
   await ensureLegacyColumns();
 
-  const adminEmail = (process.env.ADMIN_SEED_EMAIL || 'admin@nexgen.local').toLowerCase();
+  const adminEmail = (process.env.ADMIN_SEED_EMAIL || 'admin@kairo.local').toLowerCase();
   const adminPass = process.env.ADMIN_SEED_PASSWORD || 'ChangeMe123!';
   let admin = await AdminUser.findOne({ where: { email: adminEmail } });
   if (!admin) {
@@ -61,17 +61,17 @@ async function run() {
       id: 'admin_1',
       email: adminEmail,
       passwordHash: bcrypt.hashSync(adminPass, 10),
-      name: 'NEXGEN Admin',
+      name: 'KAIRO Admin',
       role: 'super_admin',
     });
   }
 
   const staffSeeds = [
-    { id: 'admin_mgr', email: 'manager@nexgen.local', name: 'Ops Manager', role: 'manager', baseSalary: 25000 },
-    { id: 'admin_hr', email: 'hr@nexgen.local', name: 'HR Lead', role: 'hr', baseSalary: 22000 },
-    { id: 'admin_mkt', email: 'marketing@nexgen.local', name: 'Marketing Lead', role: 'marketing', baseSalary: 20000 },
-    { id: 'admin_cs', email: 'support@nexgen.local', name: 'Client Support', role: 'client_support', baseSalary: 18000 },
-    { id: 'admin_rec', email: 'recruit@nexgen.local', name: 'Recruitment Exec', role: 'recruitment_exec', baseSalary: 16000 },
+    { id: 'admin_mgr', email: 'manager@kairo.local', name: 'Ops Manager', role: 'manager', baseSalary: 25000 },
+    { id: 'admin_hr', email: 'hr@kairo.local', name: 'HR Lead', role: 'hr', baseSalary: 22000 },
+    { id: 'admin_mkt', email: 'marketing@kairo.local', name: 'Marketing Lead', role: 'marketing', baseSalary: 20000 },
+    { id: 'admin_cs', email: 'support@kairo.local', name: 'Client Support', role: 'client_support', baseSalary: 18000 },
+    { id: 'admin_rec', email: 'recruit@kairo.local', name: 'Recruitment Exec', role: 'recruitment_exec', baseSalary: 16000 },
   ];
   for (const s of staffSeeds) {
     const [row] = await AdminUser.findOrCreate({
@@ -97,7 +97,7 @@ async function run() {
                   : s.role === 'recruitment_exec' ? 'Recruitment Exec'
                     : 'Staff',
         baseSalary: s.baseSalary,
-        upiId: `${s.role}@nexgen`,
+        upiId: `${s.role}@kairo`,
       },
     });
   }
@@ -186,7 +186,7 @@ async function run() {
       email: 'dwaraka.sai@email.com',
       address: 'Danavaipeta, Rajahmundry, AP',
       rewardPoints: 850,
-      referralCode: 'NEXGEN2026',
+      referralCode: 'KAIRO2026',
     },
   });
 
@@ -289,7 +289,7 @@ async function run() {
     },
     {
       id: 'banner_rewards',
-      title: 'Earn NEXGEN Rewards',
+      title: 'Earn KAIRO Rewards',
       subtitle: 'Points on every booking',
       imageUrl: '',
       ctaText: 'Learn More',
@@ -504,8 +504,8 @@ async function run() {
 
   console.log('Seed complete.');
   console.log('  Admin:', adminEmail, '/', adminPass);
-  console.log('  Manager: manager@nexgen.local /', adminPass);
-  console.log('  HR: hr@nexgen.local /', adminPass);
+  console.log('  Manager: manager@kairo.local /', adminPass);
+  console.log('  HR: hr@kairo.local /', adminPass);
   await sequelize.close();
   process.exit(0);
 }

@@ -1,4 +1,4 @@
-import { Op } from 'sequelize';
+﻿import { Op } from 'sequelize';
 import { Partner, Booking } from '../models/index.js';
 import { haversineKm } from '../utils/haversine.js';
 import { CITY_CENTROIDS } from './visitingChargeService.js';
@@ -54,7 +54,7 @@ export function enrichShopRow(shop, category, userLat, userLng, partnerNearby) {
     distanceKm,
     distanceLabel: distanceKm != null ? `${distanceKm.toFixed(1)} km` : '—',
     partnerNearby: Boolean(partnerNearby),
-    partnerNearbyLabel: partnerNearby ? 'NEXGEN Partner nearby' : null,
+    partnerNearbyLabel: partnerNearby ? 'KAIRO Partner nearby' : null,
   };
 }
 

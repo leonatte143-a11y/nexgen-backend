@@ -1,4 +1,4 @@
-import { Op } from 'sequelize';
+﻿import { Op } from 'sequelize';
 import { randomUUID } from 'crypto';
 import { Partner, PartnerDocument, Notification, Booking } from '../../models/index.js';
 import { sendOk, sendFail } from '../../utils/apiResponse.js';
@@ -98,7 +98,7 @@ export async function approveKyc(req, res, next) {
       userId: null,
       type: 'partner',
       title: 'KYC Approved',
-      body: 'Congratulations! You are now a NEXGEN Partner.',
+      body: 'Congratulations! You are now a KAIRO Partner.',
       read: false,
       timeLabel: 'now',
     });

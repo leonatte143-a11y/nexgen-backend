@@ -1,8 +1,8 @@
-{
-  "name": "nexgen-api",
+﻿{
+  "name": "kairo-api",
   "version": "1.0.0",
   "private": true,
-  "description": "NEXGEN backend (Express, MySQL, Sequelize) — built from mobile mock service contracts",
+  "description": "KAIRO backend (Express, MySQL, Sequelize) — built from mobile mock service contracts",
   "main": "src/index.js",
   "type": "module",
   "scripts": {

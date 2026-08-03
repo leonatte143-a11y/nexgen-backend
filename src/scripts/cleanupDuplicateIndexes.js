@@ -1,4 +1,4 @@
-/**
+﻿/**
  * One-time / maintenance: remove duplicate UNIQUE indexes created by Sequelize alter sync.
  *
  * Usage:
@@ -18,30 +18,30 @@ const dryRun = process.argv.includes('--dry-run');
 
 async function main() {
   await sequelize.authenticate();
-  console.log('[NEXGEN] Index cleanup', dryRun ? '(dry run)' : '(live)');
+  console.log('[KAIRO] Index cleanup', dryRun ? '(dry run)' : '(live)');
 
   for (const { tableName } of INDEX_DEDUPE_TARGETS) {
     try {
       const indexes = await listTableIndexes(sequelize, tableName);
       const count = new Set(indexes.map((r) => r.Key_name)).size;
-      console.log(`[NEXGEN] ${tableName}: ${count} index entries before cleanup`);
+      console.log(`[KAIRO] ${tableName}: ${count} index entries before cleanup`);
     } catch (e) {
-      console.log(`[NEXGEN] ${tableName}: skip (${e.message})`);
+      console.log(`[KAIRO] ${tableName}: skip (${e.message})`);
     }
   }
 
   const results = await runIndexDedupePass(sequelize, { dryRun });
   for (const r of results) {
     console.log(
-      `[NEXGEN] ${r.tableName}.${r.columnName}: kept=${r.kept ?? 'n/a'} dropped=[${r.dropped.join(', ')}] created=${r.created}`,
+      `[KAIRO] ${r.tableName}.${r.columnName}: kept=${r.kept ?? 'n/a'} dropped=[${r.dropped.join(', ')}] created=${r.created}`,
     );
   }
 
-  console.log('[NEXGEN] Done.');
+  console.log('[KAIRO] Done.');
   process.exit(0);
 }
 
 main().catch((e) => {
-  console.error('[NEXGEN] Cleanup failed:', e.message || e);
+  console.error('[KAIRO] Cleanup failed:', e.message || e);
   process.exit(1);
 });

@@ -1,4 +1,4 @@
-import express from 'express';
+﻿import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
@@ -28,7 +28,7 @@ if (isDevLoggingEnabled()) {
 app.use(express.json({ limit: '1mb' }));
 
 app.get('/health', (req, res) => {
-  res.json({ success: true, data: { status: 'ok' }, message: 'NEXGEN API' });
+  res.json({ success: true, data: { status: 'ok' }, message: 'KAIRO API' });
 });
 
 app.use('/api', api);

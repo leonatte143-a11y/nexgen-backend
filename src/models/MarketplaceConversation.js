@@ -1,6 +1,6 @@
-import { DataTypes, Model } from 'sequelize';
+﻿import { DataTypes, Model } from 'sequelize';
 
-/** Direct Buyer<->Seller chat for a P2P listing — separate from the NEXGEN Super-Chat
+/** Direct Buyer<->Seller chat for a P2P listing — separate from the KAIRO Super-Chat
  * support system since it isn't tied to a booking or admin-monitored conversation. */
 export function defineMarketplaceConversation(sequelize) {
   class MarketplaceConversation extends Model {}

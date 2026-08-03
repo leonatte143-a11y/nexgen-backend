@@ -1,4 +1,4 @@
-import bcrypt from 'bcryptjs';
+﻿import bcrypt from 'bcryptjs';
 import { User, AdminUser, Partner } from '../models/index.js';
 import { issueOtp, verifyOtpRecord, getOtpDigitLength } from '../services/otpService.js';
 import { signToken } from '../utils/jwt.js';
@@ -93,7 +93,7 @@ export async function verifyOtpUser(req, res, next) {
       ctrlLog('AUTH', 'OTP verify blocked user', req, { userId: user.id, phoneLast4: phone.slice(-4) });
       return res.status(200).json({
         success: true,
-        data: { ok: false, message: 'This account is blocked. Contact NEXGEN support.' },
+        data: { ok: false, message: 'This account is blocked. Contact KAIRO support.' },
         message: '',
       });
     }
@@ -257,7 +257,7 @@ export async function adminLogin(req, res, next) {
         admin: {
           id: admin.id,
           email: admin.email,
-          name: admin.name || 'NEXGEN Admin',
+          name: admin.name || 'KAIRO Admin',
           role: admin.role || 'super_admin',
           mustResetPassword: Boolean(admin.mustResetPassword),
           permissions,

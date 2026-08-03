@@ -1,4 +1,4 @@
-# Sample JSON responses
+﻿# Sample JSON responses
 
 ## `GET /api/v1/users/me`
 
@@ -13,7 +13,7 @@
     "phone": "9876543210",
     "address": "Danavaipeta, Rajahmundry, AP",
     "rewardPoints": 850,
-    "referralCode": "NEXGEN2026"
+    "referralCode": "KAIRO2026"
   },
   "message": ""
 }

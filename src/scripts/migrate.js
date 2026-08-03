@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Safe migration script for Railway deployment.
  *
  * Default (idempotent):
@@ -21,19 +21,19 @@ import { runColumnEnsurePass } from '../utils/columnMaintenance.js';
 const alterTables = process.env.DB_SYNC_ALTER === 'true';
 
 async function migrate() {
-  console.log('[NEXGEN] Starting database migration');
-  console.log('[NEXGEN] NODE_ENV =', process.env.NODE_ENV || 'development');
-  console.log('[NEXGEN] Altering tables =', alterTables);
+  console.log('[KAIRO] Starting database migration');
+  console.log('[KAIRO] NODE_ENV =', process.env.NODE_ENV || 'development');
+  console.log('[KAIRO] Altering tables =', alterTables);
 
   try {
     await sequelize.authenticate();
 
-    console.log('[NEXGEN] Running index dedupe pass (prevents duplicate UNIQUE indexes)...');
+    console.log('[KAIRO] Running index dedupe pass (prevents duplicate UNIQUE indexes)...');
     const dedupe = await runIndexDedupePass(sequelize);
     for (const r of dedupe) {
       if (r.dropped.length > 0 || r.created) {
         console.log(
-          `[NEXGEN]   ${r.tableName}: kept=${r.kept} dropped=${r.dropped.length} created=${r.created}`,
+          `[KAIRO]   ${r.tableName}: kept=${r.kept} dropped=${r.dropped.length} created=${r.created}`,
         );
       }
     }
@@ -42,19 +42,19 @@ async function migrate() {
 
     const cols = await runColumnEnsurePass(sequelize);
     if (cols.added > 0) {
-      console.log(`[NEXGEN] Column ensure pass: added=${cols.added} already-present=${cols.skipped}`);
+      console.log(`[KAIRO] Column ensure pass: added=${cols.added} already-present=${cols.skipped}`);
     }
 
-    console.log('[NEXGEN] ✓ Database migration complete');
-    console.log('[NEXGEN] All tables are ready.');
+    console.log('[KAIRO] ✓ Database migration complete');
+    console.log('[KAIRO] All tables are ready.');
     if (!alterTables) {
-      console.log('[NEXGEN] Tip: new tables are created; set DB_SYNC_ALTER=true only when you need column changes.');
+      console.log('[KAIRO] Tip: new tables are created; set DB_SYNC_ALTER=true only when you need column changes.');
     }
     process.exit(0);
   } catch (error) {
-    console.error('[NEXGEN] ✗ Migration failed:', error.message || error);
+    console.error('[KAIRO] ✗ Migration failed:', error.message || error);
     if (String(error.message || '').includes('Too many keys')) {
-      console.error('[NEXGEN] Run: npm run db:cleanup-indexes');
+      console.error('[KAIRO] Run: npm run db:cleanup-indexes');
     }
     process.exit(1);
   }

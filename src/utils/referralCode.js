@@ -1,6 +1,6 @@
-import { User, Partner } from '../models/index.js';
+﻿import { User, Partner } from '../models/index.js';
 
-const DEFAULT_PREFIX = 'NEXGEN';
+const DEFAULT_PREFIX = 'KAIRO';
 
 function slugPart(value, maxLen = 6) {
   const s = String(value || '')
@@ -22,7 +22,7 @@ export function buildReferralCode({ firstName, lastName, phone, id }) {
 
 /** Ensure user has a unique referralCode; updates DB when missing or generic. */
 export async function ensureUserReferralCode(user) {
-  const generic = new Set(['NEXGEN2026', 'NEXGEN', '']);
+  const generic = new Set(['KAIRO2026', 'KAIRO', '']);
   const current = String(user.referralCode || '').trim();
   if (current && !generic.has(current)) {
     const taken = await User.findOne({

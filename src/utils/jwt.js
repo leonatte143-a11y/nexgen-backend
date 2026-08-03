@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken';
+﻿import jwt from 'jsonwebtoken';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -43,12 +43,12 @@ export function assertJwtSecretsConfigured() {
     'Set JWT_USER_SECRET, JWT_PARTNER_SECRET, and JWT_ADMIN_SECRET (recommended), ' +
     'or set JWT_SECRET alone as a shared signing key for all roles.';
 
-  const runningOnRailway = process.env.NEXGEN_RAILWAY === 'true' || Boolean(process.env.RAILWAY);
+  const runningOnRailway = process.env.KAIRO_RAILWAY === 'true' || Boolean(process.env.RAILWAY);
 
   if (runningOnRailway) {
     // In hosted environments we should not instruct users to create a local .env file.
     throw new Error(
-      `[NEXGEN] Missing JWT secret for role(s): ${missing.join(', ')}. ${hint} ` +
+      `[KAIRO] Missing JWT secret for role(s): ${missing.join(', ')}. ${hint} ` +
         `Set the variables in your Railway (or platform) environment variables panel.`,
     );
   }
@@ -56,7 +56,7 @@ export function assertJwtSecretsConfigured() {
   // Local developer guidance (keep the old helpful message pointing to .env).
   const envFile = backendEnvFilePath();
   throw new Error(
-    `[NEXGEN] Missing JWT secret for role(s): ${missing.join(', ')}. ${hint}\n` +
+    `[KAIRO] Missing JWT secret for role(s): ${missing.join(', ')}. ${hint}\n` +
       `Expected a file at: ${envFile}\n` +
       `If it is missing, run: cp .env.example .env   (from the backend folder, same directory as package.json)`,
   );
