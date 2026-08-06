@@ -19,6 +19,7 @@ import {
   GeoZone,
   Shop,
   ShopCategory,
+  StaffProfile,
 } from '../models/index.js';
 import { syncDatabase, sequelize } from '../models/index.js';
 import { runColumnEnsurePass } from '../utils/columnMaintenance.js';
