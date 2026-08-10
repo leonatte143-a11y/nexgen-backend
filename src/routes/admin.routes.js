@@ -171,6 +171,8 @@ r.get('/banners', requirePermission(P.MARKETING_MANAGE), banner.adminListBanners
 r.post('/banners', requirePermission(P.MARKETING_MANAGE), banner.adminCreateBanner);
 r.put('/banners/:id', requirePermission(P.MARKETING_MANAGE), banner.adminUpdateBanner);
 r.delete('/banners/:id', requirePermission(P.MARKETING_MANAGE), banner.adminDeleteBanner);
+r.post('/banners/:id/approve', requirePermission(P.MARKETING_MANAGE), banner.adminApproveBanner);
+r.post('/banners/:id/reject', requirePermission(P.MARKETING_MANAGE), banner.adminRejectBanner);
 
 // Shops & marketplace
 r.get('/shops/pending', requirePermission(P.SHOPS_VERIFY, P.SHOPS_MANAGE), shops.listPending);

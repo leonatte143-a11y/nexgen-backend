@@ -23,6 +23,11 @@ export function defineAdvertisementBanner(sequelize) {
       createdBy: { type: DataTypes.STRING(64), allowNull: true },
       /** Optional geo-fence polygon: array of { lat, lng } points. Null/empty = no location restriction. */
       geoFence: { type: DataTypes.JSON, allowNull: true },
+      /** 'pending' | 'approved' | 'rejected'. Defaults to 'approved' so existing/admin-created banners
+       * keep behaving exactly as before. Partner-submitted ads explicitly set 'pending' at creation. */
+      status: { type: DataTypes.STRING(16), allowNull: false, defaultValue: 'approved' },
+      /** Nullable FK to partners.id — set when a banner was submitted by a partner (vs. admin-created). */
+      partnerId: { type: DataTypes.STRING(64), allowNull: true },
     },
     {
       sequelize,

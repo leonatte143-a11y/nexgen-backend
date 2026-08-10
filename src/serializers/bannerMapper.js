@@ -18,6 +18,8 @@ export function toBannerDto(row) {
     endDate: row.endDate ? row.endDate.toISOString() : null,
     createdBy: row.createdBy ?? null,
     geoFence: row.geoFence ?? null,
+    status: row.status || 'approved',
+    partnerId: row.partnerId ?? null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };

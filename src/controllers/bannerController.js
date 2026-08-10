@@ -4,7 +4,7 @@ import { sendOk, sendFail } from '../utils/apiResponse.js';
 import { toBannerDto } from '../serializers/bannerMapper.js';
 import { buildActiveBannerWhere } from '../services/bannerQuery.js';
 import { BANNER_QUEUE_ORDER, nextDisplayOrder } from '../services/bannerQueueService.js';
-import { validateBannerPayload } from '../utils/bannerValidation.js';
+import { validateBannerPayload, isValidMediaUrl } from '../utils/bannerValidation.js';
 import { isPointInPolygon } from '../utils/geoFence.js';
 
 function parseCoords(req) {
@@ -53,7 +53,10 @@ export async function listHomeBanners(req, res, next) {
 
 export async function adminListBanners(req, res, next) {
   try {
+    const where = {};
+    if (req.query.status) where.status = req.query.status;
     const rows = await AdvertisementBanner.findAll({
+      where,
       order: BANNER_QUEUE_ORDER,
     });
     return sendOk(res, rows.map(toBannerDto));
@@ -141,6 +144,76 @@ export async function adminDeleteBanner(req, res, next) {
     if (!row) return sendFail(res, 'Banner not found', 404);
     await row.destroy();
     return sendOk(res, { id: req.params.id }, 'Banner deleted');
+  } catch (e) {
+    next(e);
+  }
+}
+
+export async function adminApproveBanner(req, res, next) {
+  try {
+    const row = await AdvertisementBanner.findByPk(req.params.id);
+    if (!row) return sendFail(res, 'Banner not found', 404);
+    await row.update({ status: 'approved', isActive: true });
+    return sendOk(res, toBannerDto(row), 'Ad approved');
+  } catch (e) {
+    next(e);
+  }
+}
+
+export async function adminRejectBanner(req, res, next) {
+  try {
+    const row = await AdvertisementBanner.findByPk(req.params.id);
+    if (!row) return sendFail(res, 'Banner not found', 404);
+    await row.update({ status: 'rejected', isActive: false });
+    return sendOk(res, toBannerDto(row), 'Ad rejected');
+  } catch (e) {
+    next(e);
+  }
+}
+
+/** Partner-facing: submit a business ad for admin approval. Mirrors the "Advertise your
+ * business" mobile flow (business details + banner image + plan duration -> pending ad row). */
+export async function createPartnerAdRequest(req, res, next) {
+  try {
+    const b = req.body || {};
+    const title = String(b.businessName || b.title || '').trim();
+    if (!title) return sendFail(res, 'businessName is required', 400);
+
+    const imageUrl = b.imageUrl?.trim() || null;
+    if (!imageUrl || !isValidMediaUrl(imageUrl)) {
+      return sendFail(res, 'imageUrl must be a valid http(s) URL or image/video data URL', 400);
+    }
+
+    const startDate = b.startDate ? new Date(b.startDate) : new Date();
+    const endDate = b.endDate ? new Date(b.endDate) : null;
+    if (b.endDate && Number.isNaN(endDate?.getTime())) {
+      return sendFail(res, 'endDate must be a valid date', 400);
+    }
+
+    const placement = b.placement || 'home_dashboard';
+    const displayOrder = await nextDisplayOrder(placement);
+
+    const row = await AdvertisementBanner.create({
+      id: `banner_${randomUUID().slice(0, 8)}`,
+      title,
+      subtitle: b.subtitle?.trim() || b.businessAddress?.trim() || null,
+      imageUrl,
+      mediaType: (b.mediaType || 'image').toLowerCase() === 'video' ? 'video' : 'image',
+      placement,
+      ctaText: 'Learn more',
+      redirectType: b.redirectValue ? 'external' : 'none',
+      redirectValue: b.redirectValue?.trim() || null,
+      city: b.city?.trim() || null,
+      isActive: false,
+      priority: 0,
+      displayOrder,
+      startDate,
+      endDate,
+      createdBy: req.partnerId || null,
+      partnerId: req.partnerId || null,
+      status: 'pending',
+    });
+    return sendOk(res, toBannerDto(row), 'Ad submitted for approval', 201);
   } catch (e) {
     next(e);
   }

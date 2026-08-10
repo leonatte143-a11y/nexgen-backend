@@ -213,6 +213,7 @@ export async function getServicePartners(req, res, next) {
       rating: Number(p.rating),
       jobsCompleted: p.jobsCompleted,
       photoUrl: p.photoUrl || undefined,
+      photos: parseJsonArray(p.photos),
       reviewsCount: reviewCounts[p.id] ?? 0,
       categories: parseJsonArray(p.categories),
       isOnline: Boolean(p.isOnline),

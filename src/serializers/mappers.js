@@ -142,6 +142,7 @@ export function toPartnerProfile(p) {
     name: p.name,
     phone: p.phone,
     photoUrl: p.photoUrl || '',
+    photos: jsonStringArray(p.photos),
     rating: toNum(p.rating),
     jobsCompleted: p.jobsCompleted,
     isOnline: p.isOnline,

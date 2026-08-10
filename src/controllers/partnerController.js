@@ -89,6 +89,14 @@ function partnerRegistrationFields(body) {
     trainingProgress:
       body.trainingProgress != null ? Math.max(0, Math.min(100, Number(body.trainingProgress) || 0)) : undefined,
     verificationStatus: body.verificationStatus || 'Pending',
+    idType: body.idType ? String(body.idType).trim() : undefined,
+    idNumber: body.idNumber ? String(body.idNumber).trim() : undefined,
+    pincode: body.pincode ? String(body.pincode).trim() : undefined,
+    customCategoryRequest: body.customCategory
+      ? String(body.customCategory).trim()
+      : body.customCategoryRequest
+        ? String(body.customCategoryRequest).trim()
+        : undefined,
   };
 }
 
@@ -130,6 +138,10 @@ export async function upsertPartnerRegistration(body, { allowUpdate = true } = {
     bankName: fields.bankName || existing.bankName,
     bankAccount: fields.bankAccount || existing.bankAccount,
     primaryCity: fields.primaryCity || existing.primaryCity,
+    idType: fields.idType || existing.idType,
+    idNumber: fields.idNumber || existing.idNumber,
+    pincode: fields.pincode || existing.pincode,
+    customCategoryRequest: fields.customCategoryRequest || existing.customCategoryRequest,
   };
   if (fields.trainingProgress != null) upd.trainingProgress = fields.trainingProgress;
   await existing.update(upd);
@@ -457,6 +469,7 @@ export async function updateProfile(req, res, next) {
       'name',
       'phone',
       'photoUrl',
+      'photos',
       'skills',
       'categories',
       'bankName',

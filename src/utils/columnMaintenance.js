@@ -78,10 +78,22 @@ const COLUMN_ALTERS = [
   "ALTER TABLE partners ADD COLUMN referral_code VARCHAR(32) NULL",
   "ALTER TABLE partners ADD COLUMN referred_by_partner_id VARCHAR(64) NULL",
   "ALTER TABLE partners ADD COLUMN referral_credited TINYINT(1) NOT NULL DEFAULT 0",
+  // Partner gallery + KYC fields
+  "ALTER TABLE partners ADD COLUMN photos JSON NULL",
+  "ALTER TABLE partners ADD COLUMN id_type VARCHAR(32) NULL",
+  "ALTER TABLE partners ADD COLUMN id_number VARCHAR(64) NULL",
+  "ALTER TABLE partners ADD COLUMN pincode VARCHAR(6) NULL",
+  "ALTER TABLE partners ADD COLUMN custom_category_request VARCHAR(256) NULL",
+  // Partner-submitted advertisement requests
+  "ALTER TABLE advertisement_banners ADD COLUMN status VARCHAR(16) NOT NULL DEFAULT 'approved'",
+  "ALTER TABLE advertisement_banners ADD COLUMN partner_id VARCHAR(64) NULL",
 ];
 
 /** Column type widenings — idempotent (MODIFY COLUMN never errors on rerun). */
-const COLUMN_MODIFICATIONS = ["ALTER TABLE shops MODIFY COLUMN photo_url TEXT NULL"];
+const COLUMN_MODIFICATIONS = [
+  "ALTER TABLE shops MODIFY COLUMN photo_url TEXT NULL",
+  "ALTER TABLE partners MODIFY COLUMN photo_url TEXT NULL",
+];
 
 const CREATE_TABLES = [
   `CREATE TABLE IF NOT EXISTS emergency_requests (

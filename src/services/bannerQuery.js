@@ -7,6 +7,7 @@ export function buildActiveBannerWhere(cityQuery, placement) {
 
   const where = {
     isActive: true,
+    status: 'approved',
     [Op.and]: [
       {
         [Op.or]: [{ startDate: null }, { startDate: { [Op.lte]: now } }],

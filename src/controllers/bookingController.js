@@ -35,6 +35,11 @@ async function bookingWithLineItems(booking) {
   const partner = await Partner.findByPk(booking.partnerId);
   const payload = toUserBooking(booking, map.get(booking.id) || []);
   if (partner?.phone) payload.partnerPhone = partner.phone;
+  // toUserBooking only exposes userStatus, but userStatus never transitions on
+  // partner accept/reject (only partnerStatus does). Expose partnerStatus too so
+  // clients (e.g. BookingTrackingScreen) can detect "still awaiting partner
+  // confirmation" (partnerStatus === 'new') vs "accepted" (partnerStatus === 'pending').
+  payload.partnerStatus = booking.partnerStatus;
   return payload;
 }
 
