@@ -491,6 +491,20 @@ export async function updateProfile(req, res, next) {
   }
 }
 
+/** Partner-initiated account deletion: soft-deletes (archives) the partner's own account
+ * rather than hard-deleting the row, preserving booking history integrity. Mirrors the
+ * admin archivePartner soft-delete pattern (accountStatus/archivedAt), scoped to req.partnerId. */
+export async function deleteAccount(req, res, next) {
+  try {
+    const p = await Partner.findByPk(req.partnerId);
+    if (!p) return sendFail(res, 'Partner not found', 404);
+    await p.update({ archivedAt: new Date(), accountStatus: 'archived', isOnline: false });
+    return sendOk(res, { id: p.id }, 'Account deleted');
+  } catch (e) {
+    next(e);
+  }
+}
+
 export async function getPricingLimits(req, res, next) {
   try {
     const category = req.query.category;

@@ -218,3 +218,17 @@ export async function createPartnerAdRequest(req, res, next) {
     next(e);
   }
 }
+
+/** Partner-facing: list ads this partner has submitted, newest first, so they can track
+ * approval status from the mobile "My Ads" screen. */
+export async function listMyAdRequests(req, res, next) {
+  try {
+    const rows = await AdvertisementBanner.findAll({
+      where: { partnerId: req.partnerId },
+      order: [['createdAt', 'DESC']],
+    });
+    return sendOk(res, rows.map(toBannerDto));
+  } catch (e) {
+    next(e);
+  }
+}

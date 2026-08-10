@@ -62,6 +62,8 @@ r.get('/partners', requirePermission(P.PARTNERS_MANAGE), partners.listPartners);
 r.get('/partners/kyc/pending', requirePermission(P.KYC_MANAGE), partners.listPendingKyc);
 r.get('/partners/kyc/:id', requirePermission(P.KYC_MANAGE), partners.getPartnerKyc);
 r.post('/partners/kyc/:id/approve', requirePermission(P.KYC_MANAGE), partners.approveKyc);
+r.post('/partners/kyc/:id/approve-add-category', requirePermission(P.KYC_MANAGE), partners.approveKycAddCategory);
+r.post('/partners/kyc/:id/approve-map-category', requirePermission(P.KYC_MANAGE), partners.approveKycMapCategory);
 r.post('/partners/kyc/:id/reject', requirePermission(P.KYC_MANAGE), partners.rejectKyc);
 r.put('/partners/:id', requirePermission(P.PARTNERS_MANAGE), partners.updatePartner);
 r.post('/partners/:id/documents', requirePermission(P.KYC_MANAGE), partners.uploadPartnerDocument);

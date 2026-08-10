@@ -3,6 +3,7 @@ import * as c from '../controllers/catalogController.js';
 
 const r = Router();
 
+r.get('/categories', c.listActiveCategories);
 r.get('/buckets', c.getBuckets);
 r.get('/services', c.getCatalog);
 r.get('/buckets/:bucketId/services', c.getByBucket);

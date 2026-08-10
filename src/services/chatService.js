@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import { Op } from 'sequelize';
-import { SupportConversation, SupportMessage } from '../models/index.js';
+import { SupportConversation, SupportMessage, SupportTicket } from '../models/index.js';
 import { emitToConversation } from '../realtime/chatSocket.js';
 
 /** Universal Super-Chat: every conversation is tagged with User/Partner/Booking IDs so
@@ -56,6 +56,24 @@ export async function sendMessage({ conversationId, senderType, senderId, messag
 
   emitToConversation(conversationId, 'message:new', { conversationId, message: row });
   return row;
+}
+
+/** Populates the vestigial SupportConversation.ticketId link: get-or-creates the user/partner's
+ * general support conversation and tags it with a newly-raised ticket, so the mobile
+ * "Conversations" screen can show ticket status alongside the live chat thread. */
+export async function linkConversationToTicket({ userId, partnerId, bookingId, ticketId }) {
+  const conv = await getOrCreateConversation({ userId, partnerId, bookingId, channel: 'customer' });
+  if (conv.ticketId !== ticketId) {
+    await conv.update({ ticketId });
+  }
+  return conv;
+}
+
+/** Fetches a conversation's linked ticket (subject/status/priority), if any, so callers can
+ * surface it inline with the chat thread without a separate mobile round-trip. */
+export async function getLinkedTicket(conversation) {
+  if (!conversation?.ticketId) return null;
+  return SupportTicket.findByPk(conversation.ticketId);
 }
 
 export async function claimConversation(conversationId, adminId) {

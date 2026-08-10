@@ -85,6 +85,19 @@ export async function getBuckets(req, res, next) {
   }
 }
 
+export async function listActiveCategories(_req, res, next) {
+  try {
+    const rows = await Category.findAll({
+      where: { isActive: true },
+      order: [['nameEn', 'ASC']],
+      attributes: ['id', 'nameEn', 'emoji', 'iconUrl'],
+    });
+    return sendOk(res, rows.map((c) => ({ id: c.id, nameEn: c.nameEn, emoji: c.emoji, iconUrl: c.iconUrl })));
+  } catch (e) {
+    next(e);
+  }
+}
+
 export async function getCatalog(req, res, next) {
   try {
     const rows = await Service.findAll({

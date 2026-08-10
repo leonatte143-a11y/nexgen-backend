@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto';
 import { SupportTicket, Booking, SupportConversation } from '../models/index.js';
 import { sendOk, sendFail } from '../utils/apiResponse.js';
-import { getOrCreateConversation, listMessages, sendMessage } from '../services/chatService.js';
+import { getOrCreateConversation, listMessages, sendMessage, linkConversationToTicket, getLinkedTicket } from '../services/chatService.js';
 
 export async function listMyTickets(req, res, next) {
   try {
@@ -42,6 +42,10 @@ export async function createTicket(req, res, next) {
       status: 'open',
     });
 
+    // Link this ticket to the user's general support conversation so the merged mobile
+    // "Conversations" screen can show ticket status alongside the live chat thread.
+    await linkConversationToTicket({ userId: req.userId, ticketId: ticket.id });
+
     return sendOk(res, ticket, 'Support ticket created');
   } catch (e) {
     next(e);
@@ -58,7 +62,8 @@ export async function startOrGetConversation(req, res, next) {
     }
     const conv = await getOrCreateConversation({ userId: req.userId, partnerId, bookingId, channel: 'customer' });
     const messages = await listMessages(conv.id);
-    return sendOk(res, { conversation: conv, messages });
+    const ticket = await getLinkedTicket(conv);
+    return sendOk(res, { conversation: conv, messages, ticket });
   } catch (e) {
     next(e);
   }

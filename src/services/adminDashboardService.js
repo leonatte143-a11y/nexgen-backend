@@ -5,6 +5,7 @@ import {
   Booking,
   SearchLog,
   Service,
+  AdvertisementBanner,
 } from '../models/index.js';
 import { COMMISSION_RATE } from './money.js';
 import { toNum } from '../serializers/formatters.js';
@@ -13,15 +14,18 @@ const ACTIVE_PARTNER_STATUSES = ['accepted', 'in_progress', 'partner_assigned'];
 const LIVE_PARTNER_STATUSES = ['accepted', 'in_progress'];
 
 export async function getDashboardStats() {
-  const [totalUsers, totalPartners, onlinePartners, totalBookings, bookingsToday] = await Promise.all([
-    User.count(),
-    Partner.count(),
-    Partner.count({ where: { isOnline: true } }),
-    Booking.count(),
-    Booking.count({
-      where: literal('DATE(created_at) = CURDATE()'),
-    }),
-  ]);
+  const [totalUsers, totalPartners, onlinePartners, totalBookings, bookingsToday, activeAds, pendingCustomCategories] =
+    await Promise.all([
+      User.count(),
+      Partner.count(),
+      Partner.count({ where: { isOnline: true } }),
+      Booking.count(),
+      Booking.count({
+        where: literal('DATE(created_at) = CURDATE()'),
+      }),
+      AdvertisementBanner.count({ where: { status: 'approved', isActive: true } }),
+      Partner.count({ where: { customCategoryRequest: { [Op.ne]: null }, verificationStatus: 'Pending' } }),
+    ]);
 
   const completed = await Booking.findAll({
     where: { userStatus: { [Op.in]: ['completed', 'done'] } },
@@ -62,6 +66,8 @@ export async function getDashboardStats() {
     totalRevenue: Math.round(totalRevenue),
     revenueToday: Math.round(revenueToday),
     liveBookings,
+    activeAds,
+    pendingCustomCategories,
     commissionRate: COMMISSION_RATE * 100,
     unmetDemand: unmetRows.map((r) => ({
       keyword: r.query,
