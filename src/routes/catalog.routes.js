@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { requireUser } from '../middlewares/auth.js';
 import * as c from '../controllers/catalogController.js';
 
 const r = Router();
@@ -13,5 +14,6 @@ r.get('/services/:id/partners/:partnerId/menu', c.getPartnerServiceMenu);
 r.get('/visiting-charge', c.getVisitingCharge);
 r.get('/search', c.search);
 r.get('/top-rated', c.topRated);
+r.post('/partners/:partnerId/view', requireUser, c.logProfileView);
 
 export default r;

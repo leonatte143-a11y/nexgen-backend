@@ -1,11 +1,12 @@
 import { Op } from 'sequelize';
+import { randomUUID } from 'crypto';
 
 const MENU_WHERE = {
   isActive: true,
   [Op.or]: [{ approvalStatus: 'approved' }, { approvalStatus: null }],
 };
-import { Category, Service, Partner, Review, PartnerServicePricing, sequelize } from '../models/index.js';
-import { sendOk } from '../utils/apiResponse.js';
+import { Category, Service, Partner, Review, PartnerServicePricing, Notification, User, sequelize } from '../models/index.js';
+import { sendOk, sendFail } from '../utils/apiResponse.js';
 import { toCatalogService, toServiceBucket } from '../serializers/mappers.js';
 import { logSearch } from '../services/searchLogService.js';
 import { getSettings } from '../services/appSettingsService.js';
@@ -74,6 +75,20 @@ function matchesServiceTerms(partner, terms) {
     }
     return false;
   });
+}
+
+/**
+ * Exact id match: KYC approval flows (approveKycAddCategory / approveKycMapCategory)
+ * push the Category.id (e.g. "home_repair", "cat_electrician_<hash>") directly into
+ * partner.categories. Comparing that id against Service.categoryId is a reliable
+ * id-to-id match, independent of whatever free-text wording admins typed for the
+ * service name/categoryLabel.
+ */
+function matchesServiceCategoryId(partner, categoryId) {
+  if (!categoryId) return false;
+  const id = String(categoryId).trim().toLowerCase();
+  if (!id) return false;
+  return parseJsonArray(partner.categories).some((value) => String(value).trim().toLowerCase() === id);
 }
 
 export async function getBuckets(req, res, next) {
@@ -179,13 +194,17 @@ export async function topRated(req, res, next) {
 
 export async function getServicePartners(req, res, next) {
   try {
-    const service = await Service.findByPk(req.params.id);
+    const service = await Service.findByPk(req.params.id, {
+      include: [{ model: Category, as: 'category', attributes: ['id', 'nameEn'] }],
+    });
     if (!service) {
       return sendOk(res, []);
     }
 
-    const lookupTerms = [service.name, service.categoryLabel].filter(Boolean).map((value) => String(value).trim());
-    if (!lookupTerms.length) {
+    const lookupTerms = [service.name, service.categoryLabel, service.category?.nameEn]
+      .filter(Boolean)
+      .map((value) => String(value).trim());
+    if (!lookupTerms.length && !service.categoryId) {
       return sendOk(res, []);
     }
 
@@ -217,7 +236,10 @@ export async function getServicePartners(req, res, next) {
       return acc;
     }, {});
 
-    const matching = partners.filter((partner) => matchesServiceTerms(partner, lookupTerms));
+    const matching = partners.filter(
+      (partner) =>
+        matchesServiceCategoryId(partner, service.categoryId) || matchesServiceTerms(partner, lookupTerms),
+    );
     const baseDistance = toNum(service.distanceKm) || 2.5;
     const payload = matching.map((p, index) => ({
       id: p.id,
@@ -293,6 +315,38 @@ export async function getPartnerServiceMenu(req, res, next) {
           ];
 
     return sendOk(res, { items, partnerId, serviceId });
+  } catch (e) {
+    next(e);
+  }
+}
+
+/** POST /catalog/partners/:partnerId/view — logs a User opening a Partner's profile as an "enquiry" notification for that partner. */
+export async function logProfileView(req, res, next) {
+  try {
+    const { partnerId } = req.params;
+    const partner = await Partner.findByPk(partnerId);
+    if (!partner) return sendFail(res, 'Partner not found', 404);
+
+    const user = await User.findByPk(req.userId);
+    if (!user) return sendFail(res, 'User not found', 404);
+
+    const viewerName = [user.firstName, user.lastName].filter(Boolean).join(' ').trim() || 'A user';
+    const viewerPhone = user.phone || null;
+    const viewerLocation = user.address || null;
+
+    await Notification.create({
+      id: `n_${randomUUID().slice(0, 10)}`,
+      partnerId: partner.id,
+      userId: null,
+      type: 'enquiry',
+      title: 'Profile viewed',
+      body: `${viewerName} viewed your profile`,
+      payload: { viewerName, viewerPhone, viewerLocation },
+      read: false,
+      timeLabel: 'now',
+    });
+
+    return sendOk(res, true);
   } catch (e) {
     next(e);
   }

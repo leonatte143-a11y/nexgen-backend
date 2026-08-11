@@ -8,6 +8,7 @@ import { listPartnerReviews } from '../controllers/reviewController.js';
 import { listPartnerTestimonials } from '../controllers/testimonialController.js';
 import * as support from '../controllers/partnerSupportController.js';
 import * as banner from '../controllers/bannerController.js';
+import { listEnquiries } from '../controllers/notificationController.js';
 
 const r = Router();
 
@@ -47,5 +48,6 @@ r.post('/support/chat/:id/messages', support.sendPartnerMessage);
 r.get('/referrals/earnings', c.getReferralEarnings);
 r.post('/ads', banner.createPartnerAdRequest);
 r.get('/ads', banner.listMyAdRequests);
+r.get('/enquiries', listEnquiries);
 
 export default r;

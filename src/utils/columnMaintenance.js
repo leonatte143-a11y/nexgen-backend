@@ -87,6 +87,9 @@ const COLUMN_ALTERS = [
   // Partner-submitted advertisement requests
   "ALTER TABLE advertisement_banners ADD COLUMN status VARCHAR(16) NOT NULL DEFAULT 'approved'",
   "ALTER TABLE advertisement_banners ADD COLUMN partner_id VARCHAR(64) NULL",
+  // Partner profile-view enquiries
+  "ALTER TABLE notifications ADD COLUMN partner_id VARCHAR(64) NULL",
+  "ALTER TABLE notifications ADD COLUMN payload JSON NULL",
 ];
 
 /** Column type widenings — idempotent (MODIFY COLUMN never errors on rerun). */

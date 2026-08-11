@@ -40,3 +40,26 @@ export async function markOneRead(req, res, next) {
     next(e);
   }
 }
+
+/** GET /partners/enquiries — profile-view "enquiry" notifications for the authenticated partner. */
+export async function listEnquiries(req, res, next) {
+  try {
+    const rows = await Notification.findAll({
+      where: { partnerId: req.partnerId, type: 'enquiry' },
+      order: [['createdAt', 'DESC']],
+    });
+    return sendOk(
+      res,
+      rows.map((n) => ({
+        id: n.id,
+        title: n.title,
+        body: n.body,
+        read: n.read,
+        createdAt: n.createdAt,
+        payload: n.payload || null,
+      })),
+    );
+  } catch (e) {
+    next(e);
+  }
+}
