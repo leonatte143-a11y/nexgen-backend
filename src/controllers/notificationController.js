@@ -45,7 +45,11 @@ export async function markOneRead(req, res, next) {
 export async function listEnquiries(req, res, next) {
   try {
     const rows = await Notification.findAll({
-      where: { partnerId: req.partnerId, type: 'enquiry' },
+      where: {
+        partnerId: req.partnerId,
+        type: 'enquiry',
+        createdAt: { [Op.gte]: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+      },
       order: [['createdAt', 'DESC']],
     });
     return sendOk(
@@ -59,6 +63,19 @@ export async function listEnquiries(req, res, next) {
         payload: n.payload || null,
       })),
     );
+  } catch (e) {
+    next(e);
+  }
+}
+
+/** POST /partners/enquiries/read-all — mark all of the authenticated partner's enquiry notifications as read. */
+export async function markAllEnquiriesRead(req, res, next) {
+  try {
+    await Notification.update(
+      { read: true },
+      { where: { partnerId: req.partnerId, type: 'enquiry', read: false } },
+    );
+    return sendOk(res, true);
   } catch (e) {
     next(e);
   }

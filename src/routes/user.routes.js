@@ -9,6 +9,7 @@ r.use(requireUser);
 r.get('/me', c.getMe);
 r.put('/me', c.updateMe);
 r.delete('/me', c.deleteMe);
+r.post('/me/freeze', c.toggleFreeze);
 r.post('/emergency', emergency.createEmergencyRequest);
 r.get('/support/tickets', support.listMyTickets);
 r.post('/support/tickets', support.createTicket);

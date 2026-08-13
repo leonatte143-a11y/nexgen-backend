@@ -47,6 +47,7 @@ const COLUMN_ALTERS = [
   "ALTER TABLE partners ADD COLUMN longitude DECIMAL(10,7) NULL",
   "ALTER TABLE users ADD COLUMN latitude DECIMAL(10,7) NULL",
   "ALTER TABLE users ADD COLUMN longitude DECIMAL(10,7) NULL",
+  "ALTER TABLE users ADD COLUMN is_frozen TINYINT(1) NOT NULL DEFAULT 0",
   // Category pricing controls
   "ALTER TABLE categories ADD COLUMN icon_url VARCHAR(512) NULL",
   "ALTER TABLE categories ADD COLUMN min_price DECIMAL(10,2) NULL",
@@ -90,6 +91,8 @@ const COLUMN_ALTERS = [
   // Partner profile-view enquiries
   "ALTER TABLE notifications ADD COLUMN partner_id VARCHAR(64) NULL",
   "ALTER TABLE notifications ADD COLUMN payload JSON NULL",
+  // Partner profile description/bio
+  "ALTER TABLE partners ADD COLUMN description TEXT NULL",
 ];
 
 /** Column type widenings — idempotent (MODIFY COLUMN never errors on rerun). */

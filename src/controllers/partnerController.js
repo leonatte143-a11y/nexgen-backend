@@ -478,6 +478,7 @@ export async function updateProfile(req, res, next) {
       'serviceInnerRadiusKm',
       'serviceOuterRadiusKm',
       'allowOutOfStation',
+      'description',
     ];
     const upd = {};
     for (const k of allowed) {

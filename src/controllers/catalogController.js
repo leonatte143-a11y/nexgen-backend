@@ -253,6 +253,7 @@ export async function getServicePartners(req, res, next) {
       categories: parseJsonArray(p.categories),
       isOnline: Boolean(p.isOnline),
       distanceKm: Math.round((baseDistance + index * 0.3) * 10) / 10,
+      description: p.description || '',
     }));
 
     return sendOk(res, payload);

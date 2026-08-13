@@ -34,6 +34,19 @@ export async function deleteMe(req, res, next) {
   }
 }
 
+export async function toggleFreeze(req, res, next) {
+  try {
+    const user = await User.findByPk(req.userId);
+    if (!user) return sendFail(res, 'User not found', 404);
+    const nextFrozen = !user.isFrozen;
+    await user.update({ isFrozen: nextFrozen });
+    ctrlLog('PROFILE', 'Account freeze toggled', req, { isFrozen: nextFrozen });
+    return sendOk(res, { isFrozen: nextFrozen }, nextFrozen ? 'Account frozen' : 'Account unfrozen');
+  } catch (e) {
+    next(e);
+  }
+}
+
 export async function updateMe(req, res, next) {
   try {
     const user = await User.findByPk(req.userId);

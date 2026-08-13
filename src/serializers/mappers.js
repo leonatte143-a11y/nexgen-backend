@@ -163,6 +163,7 @@ export function toPartnerProfile(p) {
     serviceOuterRadiusKm: p.serviceOuterRadiusKm,
     allowOutOfStation: p.allowOutOfStation,
     referralCode: p.referralCode || '',
+    description: p.description || '',
   };
 }
 

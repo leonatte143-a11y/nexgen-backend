@@ -46,6 +46,7 @@ export function definePartner(sequelize) {
       idNumber: { type: DataTypes.STRING(64), allowNull: true },
       pincode: { type: DataTypes.STRING(6), allowNull: true },
       customCategoryRequest: { type: DataTypes.STRING(256), allowNull: true },
+      description: { type: DataTypes.TEXT, allowNull: true },
     },
     {
       sequelize,
