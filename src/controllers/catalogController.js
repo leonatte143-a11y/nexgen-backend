@@ -119,6 +119,25 @@ function matchesServiceCategoryId(partner, categoryId) {
   return parseJsonArray(partner.categories).some((value) => String(value).trim().toLowerCase() === id);
 }
 
+/**
+ * "Virtual" service ids (see getByBucket) represent a partner surfaced in a
+ * category purely via their own `categories`/`skills` array, with no
+ * curated Service row backing them. Encoded as `virtual::<categoryId>::<partnerId>`
+ * using `::` — a separator that never appears inside a slug-style id/partnerId —
+ * so both segments can be reliably recovered regardless of underscores in
+ * either id.
+ */
+function makeVirtualServiceId(categoryId, partnerId) {
+  return `virtual::${categoryId}::${partnerId}`;
+}
+
+function parseVirtualServiceId(id) {
+  if (typeof id !== 'string' || !id.startsWith('virtual::')) return null;
+  const parts = id.split('::');
+  if (parts.length !== 3) return null;
+  return { categoryId: parts[1], partnerId: parts[2] };
+}
+
 export async function getBuckets(req, res, next) {
   try {
     const rows = await Category.findAll({ order: [['id', 'ASC']] });
@@ -156,11 +175,91 @@ export async function getCatalog(req, res, next) {
 export async function getByBucket(req, res, next) {
   try {
     const { bucketId } = req.params;
-    const rows = await Service.findAll({
+    // Optional sub-category search term (e.g. "purohith") — passed through by
+    // ServiceListScreen's bucket-fallback call. `bucketId` alone only tells us
+    // the broad parent category; a specific sub-icon's term is what actually
+    // identifies which partners belong under IT specifically, so when present
+    // it drives the real matching below instead of the much coarser
+    // bucket-name comparison.
+    const q = String(req.query.q || '').trim();
+
+    let rows = await Service.findAll({
       where: { categoryId: bucketId },
       include: [{ model: Partner, as: 'partner' }],
     });
-    return sendOk(res, rows.map(toCatalogService));
+
+    // Root-cause fix: this endpoint previously only surfaced partners who
+    // happen to have an admin-curated Service row for this exact category.
+    // A partner's own `categories` array (which can hold multiple categories,
+    // e.g. ["Purohit", "Driver", "Teacher"]) was never consulted here, so a
+    // partner with several categories only appeared under whichever one
+    // category an admin manually created a catalog row for — not "the first
+    // category" by any array-order logic, just whichever got curated.
+    // Fix: also match any verified partner whose `categories`/`skills` array
+    // contains this bucketId (id match) or — when a specific sub-icon term is
+    // given — token-overlaps that term (e.g. "purohit" vs "purohith"), and
+    // synthesize a catalog-service-shaped entry for any such partner who
+    // doesn't already have a real Service row here, so every category a
+    // partner registered under now correctly surfaces them.
+    if (q) {
+      rows = rows.filter((r) => {
+        if (
+          tokenOverlapMatch(r.name, q) ||
+          tokenOverlapMatch(r.categoryLabel, q) ||
+          tokenOverlapMatch(r.subtext, q)
+        ) {
+          return true;
+        }
+        if (r.partner) {
+          const partnerText = [...parseJsonArray(r.partner.categories), ...parseJsonArray(r.partner.skills)].join(' ');
+          if (tokenOverlapMatch(partnerText, q)) return true;
+        }
+        return false;
+      });
+    }
+
+    const existingPartnerIds = new Set(rows.map((r) => r.partnerId));
+    const category = await Category.findByPk(bucketId);
+    const categoryName = category?.nameEn || bucketId;
+
+    const candidatePartners = await Partner.findAll({
+      where: {
+        verificationStatus: { [Op.in]: ['Verified', 'Approved'] },
+        archivedAt: null,
+        isBlocked: false,
+        accountStatus: { [Op.ne]: 'archived' },
+      },
+    });
+
+    const virtualEntries = candidatePartners
+      .filter((partner) => !existingPartnerIds.has(partner.id))
+      .filter((partner) => {
+        if (matchesServiceCategoryId(partner, bucketId)) return true;
+        const partnerText = [...parseJsonArray(partner.categories), ...parseJsonArray(partner.skills)].join(' ');
+        // With a specific sub-icon term, match against THAT term (precise —
+        // this is what actually identifies "Purohit" vs "Driver" vs
+        // "Teacher"). Without one (a plain "browse this whole bucket" view,
+        // no sub-icon tapped), fall back to the looser bucket-name overlap —
+        // imprecise, but only used when there's no specific term to match
+        // against at all, and only ever adds candidates, never removes any.
+        return q ? tokenOverlapMatch(partnerText, q) : tokenOverlapMatch(partnerText, categoryName);
+      })
+      .map((partner) => ({
+        id: makeVirtualServiceId(bucketId, partner.id),
+        categoryId: bucketId,
+        name: categoryName,
+        subtext: '',
+        categoryLabel: categoryName,
+        basePrice: toNum(category?.minPrice) || 0,
+        premiumPrice: toNum(category?.maxPrice) || toNum(category?.minPrice) || 0,
+        rating: toNum(partner.rating),
+        reviewsCount: 0,
+        distanceKm: 2.5,
+        description: partner.description || '',
+        partner,
+      }));
+
+    return sendOk(res, [...rows, ...virtualEntries].map(toCatalogService));
   } catch (e) {
     next(e);
   }
@@ -168,6 +267,31 @@ export async function getByBucket(req, res, next) {
 
 export async function getById(req, res, next) {
   try {
+    const virtual = parseVirtualServiceId(req.params.id);
+    if (virtual) {
+      const [category, partner] = await Promise.all([
+        Category.findByPk(virtual.categoryId),
+        Partner.findByPk(virtual.partnerId),
+      ]);
+      if (!partner) return sendOk(res, null);
+      const categoryName = category?.nameEn || virtual.categoryId;
+      const synthesized = {
+        id: req.params.id,
+        categoryId: virtual.categoryId,
+        name: categoryName,
+        subtext: '',
+        categoryLabel: categoryName,
+        basePrice: toNum(category?.minPrice) || 0,
+        premiumPrice: toNum(category?.maxPrice) || toNum(category?.minPrice) || 0,
+        rating: toNum(partner.rating),
+        reviewsCount: 0,
+        distanceKm: 2.5,
+        description: partner.description || '',
+        partner,
+      };
+      return sendOk(res, toCatalogService(synthesized));
+    }
+
     const row = await Service.findByPk(req.params.id, {
       include: [{ model: Partner, as: 'partner' }],
     });
@@ -238,18 +362,37 @@ export async function topRated(req, res, next) {
 
 export async function getServicePartners(req, res, next) {
   try {
-    const service = await Service.findByPk(req.params.id, {
-      include: [{ model: Category, as: 'category', attributes: ['id', 'nameEn'] }],
-    });
-    if (!service) {
-      return sendOk(res, []);
-    }
+    let categoryId;
+    let lookupTerms;
+    let baseDistanceSeed = 2.5;
 
-    const lookupTerms = [service.name, service.categoryLabel, service.category?.nameEn]
-      .filter(Boolean)
-      .map((value) => String(value).trim());
-    if (!lookupTerms.length && !service.categoryId) {
-      return sendOk(res, []);
+    const virtual = parseVirtualServiceId(req.params.id);
+    if (virtual) {
+      // Virtual ids (see getByBucket) aren't real Service rows — resolve
+      // matching purely by category, same as the real-Service path below,
+      // so tapping through from a virtual entry shows the same category-wide
+      // partner list a curated Service row for this category would.
+      categoryId = virtual.categoryId;
+      const category = await Category.findByPk(categoryId);
+      lookupTerms = [category?.nameEn].filter(Boolean).map((value) => String(value).trim());
+      if (!lookupTerms.length && !categoryId) {
+        return sendOk(res, []);
+      }
+    } else {
+      const service = await Service.findByPk(req.params.id, {
+        include: [{ model: Category, as: 'category', attributes: ['id', 'nameEn'] }],
+      });
+      if (!service) {
+        return sendOk(res, []);
+      }
+      categoryId = service.categoryId;
+      lookupTerms = [service.name, service.categoryLabel, service.category?.nameEn]
+        .filter(Boolean)
+        .map((value) => String(value).trim());
+      if (!lookupTerms.length && !categoryId) {
+        return sendOk(res, []);
+      }
+      baseDistanceSeed = toNum(service.distanceKm) || 2.5;
     }
 
     const partners = await Partner.findAll({
@@ -280,11 +423,26 @@ export async function getServicePartners(req, res, next) {
       return acc;
     }, {});
 
-    const matching = partners.filter(
+    let matching = partners.filter(
       (partner) =>
-        matchesServiceCategoryId(partner, service.categoryId) || matchesServiceTerms(partner, lookupTerms),
+        matchesServiceCategoryId(partner, categoryId) || matchesServiceTerms(partner, lookupTerms),
     );
-    const baseDistance = toNum(service.distanceKm) || 2.5;
+    if (virtual) {
+      // A virtual id was discovered in getByBucket by matching the partner's
+      // OWN categories/skills against the SPECIFIC sub-icon term (e.g.
+      // "purohith"), which this function has no way to re-derive from just
+      // categoryId + the bucket's own name (e.g. "Events" — too broad to
+      // match "Purohit" text). Since the virtual id already encodes exactly
+      // which partner it was built for, guarantee that partner is present in
+      // the result regardless of whether the broader category/name-based
+      // filter above happens to also catch them.
+      const alreadyIncluded = matching.some((p) => p.id === virtual.partnerId);
+      if (!alreadyIncluded) {
+        const exactPartner = partners.find((p) => p.id === virtual.partnerId);
+        if (exactPartner) matching = [exactPartner, ...matching];
+      }
+    }
+    const baseDistance = baseDistanceSeed;
     const payload = matching.map((p, index) => ({
       id: p.id,
       name: p.name,
