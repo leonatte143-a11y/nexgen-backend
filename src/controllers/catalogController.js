@@ -65,16 +65,44 @@ function collectPartnerTerms(partner) {
     .filter(Boolean);
 }
 
+/**
+ * True if any token in tokensA equals, contains, or is contained by any token
+ * in tokensB. This is the lenient "substring-both-ways" comparison — e.g.
+ * "purohith" (from a sub-icon's searchQuery) overlaps "purohit" (from a
+ * partner's registered skills/categories) because "purohith".includes("purohit").
+ */
+function tokensOverlap(tokensA, tokensB) {
+  for (const a of tokensA) {
+    for (const b of tokensB) {
+      if (a === b || a.includes(b) || b.includes(a)) return true;
+    }
+  }
+  return false;
+}
+
+function tokenizeText(value) {
+  return String(value || '')
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean);
+}
+
+/**
+ * Lenient, token-based text match: true if any word of queryText overlaps
+ * (equals or substring-either-direction) any word of candidateText. Used in
+ * place of brittle exact `.includes()` checks so that admin-typed catalog
+ * labels (Service.name/categoryLabel/subtext) and a sub-icon's searchQuery
+ * don't need to share an exact substring to be considered a match.
+ */
+function tokenOverlapMatch(candidateText, queryText) {
+  if (!candidateText || !queryText) return false;
+  return tokensOverlap(tokenizeText(queryText), tokenizeText(candidateText));
+}
+
 function matchesServiceTerms(partner, terms) {
   const partnerTerms = new Set(collectPartnerTerms(partner));
   const serviceTerms = terms.flatMap(splitToTerms).filter(Boolean);
-  return serviceTerms.some((term) => {
-    if (partnerTerms.has(term)) return true;
-    for (const partnerTerm of partnerTerms) {
-      if (partnerTerm.includes(term) || term.includes(partnerTerm)) return true;
-    }
-    return false;
-  });
+  return tokensOverlap(serviceTerms, partnerTerms);
 }
 
 /**
@@ -159,12 +187,28 @@ export async function search(req, res, next) {
     });
     const filtered = !q
       ? rows
-      : rows.filter(
-          (s) =>
-            s.name.toLowerCase().includes(q) ||
-            s.categoryLabel.toLowerCase().includes(q) ||
-            (s.subtext && s.subtext.toLowerCase().includes(q)),
-        );
+      : rows.filter((s) => {
+          if (
+            tokenOverlapMatch(s.name, q) ||
+            tokenOverlapMatch(s.categoryLabel, q) ||
+            tokenOverlapMatch(s.subtext, q)
+          ) {
+            return true;
+          }
+          // Root-cause fix: an admin-typed Service.name/categoryLabel/subtext
+          // (set at KYC-approval time) doesn't always share wording with a
+          // sub-icon's searchQuery, even when the partner IS the right match.
+          // Fall back to the partner's own free-text registration
+          // (categories/skills), which is more likely to contain the term a
+          // user actually tapped (e.g. "Purohit").
+          if (s.partner) {
+            const partnerText = [...parseJsonArray(s.partner.categories), ...parseJsonArray(s.partner.skills)].join(
+              ' ',
+            );
+            if (tokenOverlapMatch(partnerText, q)) return true;
+          }
+          return false;
+        });
     if (q) {
       logSearch({
         query: q,
