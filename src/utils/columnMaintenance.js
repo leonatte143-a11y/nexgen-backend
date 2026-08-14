@@ -93,6 +93,10 @@ const COLUMN_ALTERS = [
   "ALTER TABLE notifications ADD COLUMN payload JSON NULL",
   // Partner profile description/bio
   "ALTER TABLE partners ADD COLUMN description TEXT NULL",
+  // Partner aggregate rating — running review count alongside `rating` average
+  "ALTER TABLE partners ADD COLUMN reviews_count INT NOT NULL DEFAULT 0",
+  // Partner-provided reason when cancelling an accepted/in-progress job
+  "ALTER TABLE bookings ADD COLUMN cancellation_reason VARCHAR(256) NULL",
 ];
 
 /** Column type widenings — idempotent (MODIFY COLUMN never errors on rerun). */

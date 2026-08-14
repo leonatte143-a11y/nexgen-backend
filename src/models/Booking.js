@@ -46,6 +46,8 @@ export function defineBooking(sequelize) {
       distanceKm: { type: DataTypes.DECIMAL(6, 2), defaultValue: 2.5 },
       /** Display label for "requested at" in partner list */
       requestedAtLabel: DataTypes.STRING(64),
+      /** Reason the partner gave when cancelling an accepted/in-progress job */
+      cancellationReason: { type: DataTypes.STRING(256), allowNull: true },
     },
     { sequelize, modelName: 'Booking', tableName: 'bookings', timestamps: true },
   );

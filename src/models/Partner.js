@@ -10,6 +10,7 @@ export function definePartner(sequelize) {
       photoUrl: DataTypes.TEXT,
       photos: { type: DataTypes.JSON, defaultValue: [] },
       rating: { type: DataTypes.DECIMAL(3, 2), defaultValue: 4.8 },
+      reviewsCount: { type: DataTypes.INTEGER, defaultValue: 0 },
       jobsCompleted: { type: DataTypes.INTEGER, defaultValue: 0 },
       isOnline: { type: DataTypes.BOOLEAN, defaultValue: false },
       skills: { type: DataTypes.JSON, defaultValue: [] },

@@ -120,6 +120,7 @@ export function toPartnerRequest(b, lineItems = []) {
     heavyWorkEstimate: h || undefined,
     visitingFeePartner: b.visitingFeePartner != null ? toNum(b.visitingFeePartner) : undefined,
     isPartnerArrived: b.isPartnerArrived || false,
+    paymentStatus: b.paymentStatus || 'pending',
   };
 }
 

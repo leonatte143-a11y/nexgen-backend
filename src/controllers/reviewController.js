@@ -1,6 +1,7 @@
 import { randomInt } from 'crypto';
-import { Review } from '../models/index.js';
+import { Review, User } from '../models/index.js';
 import { sendOk, sendFail } from '../utils/apiResponse.js';
+import { timeAgoLabel } from '../serializers/formatters.js';
 
 /**
  * Partner reviews for social proof.
@@ -24,6 +25,42 @@ export async function listPartnerReviews(req, res, next) {
         comment: r.note || '',
         createdAt: r.createdAt,
       })),
+    );
+  } catch (e) {
+    next(e);
+  }
+}
+
+/**
+ * GET /partners/reviews/mine (requirePartner) — the logged-in partner's own reviews for the
+ * "Social proof and performance" dashboard section. Reviewer identity is reduced to a
+ * privacy-conscious display name (first name + last-initial) rather than the full name.
+ */
+export async function listMyReviews(req, res, next) {
+  try {
+    const rows = await Review.findAll({
+      where: { partnerId: req.partnerId },
+      order: [['createdAt', 'DESC']],
+      limit: 20,
+    });
+    const userIds = [...new Set(rows.map((r) => r.userId))];
+    const users = userIds.length ? await User.findAll({ where: { id: userIds } }) : [];
+    const userById = new Map(users.map((u) => [u.id, u]));
+    return sendOk(
+      res,
+      rows.map((r) => {
+        const u = userById.get(r.userId);
+        const first = u?.firstName?.trim();
+        const lastInitial = u?.lastName?.trim()?.[0];
+        const displayName = first ? `${first}${lastInitial ? ` ${lastInitial}.` : ''}` : 'Customer';
+        return {
+          id: r.id,
+          customerName: displayName,
+          rating: r.stars,
+          comment: r.note || '',
+          timeLabel: timeAgoLabel(r.createdAt),
+        };
+      }),
     );
   } catch (e) {
     next(e);

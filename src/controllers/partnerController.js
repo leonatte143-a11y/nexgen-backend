@@ -376,11 +376,74 @@ export async function cancelActiveJobWithFee(req, res, next) {
     if (!b || (b.partnerStatus !== 'pending' && b.partnerStatus !== 'in_progress')) {
       return sendFail(res, 'Cannot cancel this request', 400);
     }
+    const reason = String(req.body?.reason || '').trim();
+    if (!reason) {
+      return sendFail(res, 'A cancellation reason is required', 400);
+    }
     b.partnerStatus = 'cancelled';
     b.userStatus = 'cancelled';
+    b.cancellationReason = reason;
     await b.save();
     const p = await Partner.findByPk(req.partnerId);
     await p.update({ walletBalance: toNum(p.walletBalance) + PARTNER_ARRIVAL_CANCELLATION_CREDIT });
+    return sendOk(res, toPartnerRequest(formatReq(b)));
+  } catch (e) {
+    next(e);
+  }
+}
+
+/**
+ * Partner confirms cash was physically received from the customer for a completed booking.
+ * This is what actually flips paymentStatus to 'paid' (the User's own "Pay" tap only moves
+ * it to 'awaiting_partner_confirmation' — see bookingController.confirmPayment) and is the
+ * point at which the partner's earnings/wallet/referral aggregates are credited.
+ */
+export async function confirmCashReceived(req, res, next) {
+  try {
+    const b = await bookingForPartner(req);
+    if (!b) return sendFail(res, 'Request not found', 404);
+    if (b.paymentStatus === 'paid') return sendOk(res, toPartnerRequest(formatReq(b)));
+    if (b.paymentStatus !== 'awaiting_partner_confirmation') {
+      return sendFail(res, 'No pending cash confirmation for this booking', 400);
+    }
+    b.paymentStatus = 'paid';
+    await b.save();
+
+    const p = await Partner.findByPk(req.partnerId);
+    if (p) {
+      const share = toNum(b.partnerShare);
+      const isFirstJob = !p.completedJobsCount;
+      await p.update({
+        jobsCompleted: p.jobsCompleted + 1,
+        completedJobsCount: (p.completedJobsCount || 0) + 1,
+        totalJobsCount: (p.totalJobsCount || 0) + 1,
+        todayEarnings: toNum(p.todayEarnings) + share,
+        lifetimeEarnings: toNum(p.lifetimeEarnings) + share,
+        walletBalance: toNum(p.walletBalance) + share,
+      });
+
+      // Referral Engine: referrer earns 50% of the referee's first-job commission.
+      if (isFirstJob && p.referredByPartnerId && !p.referralCredited) {
+        const referrer = await Partner.findByPk(p.referredByPartnerId);
+        if (referrer) {
+          const referralAmount = Math.round(toNum(b.adminCommission) * 0.5 * 100) / 100;
+          if (referralAmount > 0) {
+            await referrer.update({
+              walletBalance: toNum(referrer.walletBalance) + referralAmount,
+              lifetimeEarnings: toNum(referrer.lifetimeEarnings) + referralAmount,
+            });
+            await PartnerReferralEarning.create({
+              id: `refearn_${randomUUID().slice(0, 12)}`,
+              referrerPartnerId: referrer.id,
+              refereePartnerId: p.id,
+              bookingId: b.id,
+              amount: referralAmount,
+            });
+          }
+        }
+        await p.update({ referralCredited: true });
+      }
+    }
     return sendOk(res, toPartnerRequest(formatReq(b)));
   } catch (e) {
     next(e);

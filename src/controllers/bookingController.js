@@ -1,5 +1,5 @@
 ﻿import { randomInt, randomUUID } from 'crypto';
-import { User, Service, Partner, Booking, Review, PartnerReferralEarning } from '../models/index.js';
+import { User, Service, Partner, Booking, Review, Notification } from '../models/index.js';
 import { sendOk, sendFail } from '../utils/apiResponse.js';
 import { toUserBooking } from '../serializers/mappers.js';
 import { toNum } from '../serializers/formatters.js';
@@ -273,52 +273,35 @@ export async function cancelBooking(req, res, next) {
   }
 }
 
+/**
+ * User taps "Pay" on a completed, cash-mode booking. This does NOT mark the booking as
+ * paid directly — every booking today is created with paymentMethod: 'Cash', so the User
+ * cannot unilaterally confirm cash was received. Instead this moves paymentStatus into an
+ * intermediate 'awaiting_partner_confirmation' state and notifies the partner, who must
+ * confirm receipt via partnerController.confirmCashReceived before paymentStatus becomes
+ * 'paid' (which is what actually unlocks the review gate below).
+ */
 export async function confirmPayment(req, res, next) {
   try {
     const b = await Booking.findOne({ where: { id: req.params.id, userId: req.userId } });
     if (!b) return sendFail(res, 'Booking not found', 404);
     if (b.userStatus !== 'completed') return sendFail(res, 'Payment is only available after service completion', 400);
-    if (b.paymentStatus === 'paid') {
+    if (b.paymentStatus === 'paid' || b.paymentStatus === 'awaiting_partner_confirmation') {
       return sendOk(res, await bookingWithLineItems(b));
     }
-    b.paymentStatus = 'paid';
+    b.paymentStatus = 'awaiting_partner_confirmation';
     await b.save();
-    const p = await Partner.findByPk(b.partnerId);
-    if (p) {
-      const share = toNum(b.partnerShare);
-      const isFirstJob = !p.completedJobsCount;
-      await p.update({
-        jobsCompleted: p.jobsCompleted + 1,
-        completedJobsCount: (p.completedJobsCount || 0) + 1,
-        totalJobsCount: (p.totalJobsCount || 0) + 1,
-        todayEarnings: toNum(p.todayEarnings) + share,
-        lifetimeEarnings: toNum(p.lifetimeEarnings) + share,
-        walletBalance: toNum(p.walletBalance) + share,
-      });
-
-      // Referral Engine: referrer earns 50% of the referee's first-job commission.
-      if (isFirstJob && p.referredByPartnerId && !p.referralCredited) {
-        const referrer = await Partner.findByPk(p.referredByPartnerId);
-        if (referrer) {
-          const referralAmount = Math.round(toNum(b.adminCommission) * 0.5 * 100) / 100;
-          if (referralAmount > 0) {
-            await referrer.update({
-              walletBalance: toNum(referrer.walletBalance) + referralAmount,
-              lifetimeEarnings: toNum(referrer.lifetimeEarnings) + referralAmount,
-            });
-            await PartnerReferralEarning.create({
-              id: `refearn_${randomUUID().slice(0, 12)}`,
-              referrerPartnerId: referrer.id,
-              refereePartnerId: p.id,
-              bookingId: b.id,
-              amount: referralAmount,
-            });
-          }
-        }
-        await p.update({ referralCredited: true });
-      }
-    }
-    return sendOk(res, await bookingWithLineItems(b), 'Payment confirmed');
+    await Notification.create({
+      id: `n_${randomUUID().slice(0, 10)}`,
+      partnerId: b.partnerId,
+      userId: null,
+      type: 'payment',
+      title: 'Confirm cash received',
+      body: `Confirm you received cash payment for booking #${b.id}`,
+      read: false,
+      timeLabel: 'now',
+    }).catch(() => {});
+    return sendOk(res, await bookingWithLineItems(b), 'Waiting for partner to confirm payment');
   } catch (e) {
     next(e);
   }
@@ -359,6 +342,14 @@ export async function submitReview(req, res, next) {
     });
     const user = await User.findByPk(req.userId);
     if (user) await user.update({ rewardPoints: (user.rewardPoints || 0) + 10 });
+    const partner = await Partner.findByPk(b.partnerId);
+    if (partner) {
+      const prevCount = partner.reviewsCount || 0;
+      const prevRating = toNum(partner.rating) || 0;
+      const nextCount = prevCount + 1;
+      const nextRating = Math.round(((prevRating * prevCount + s) / nextCount) * 100) / 100;
+      await partner.update({ rating: nextRating, reviewsCount: nextCount });
+    }
     return sendOk(res, { bookingId: b.id, stars: rev.stars, tags: rev.tags, note: rev.note, pointsEarned: 10 });
   } catch (e) {
     next(e);

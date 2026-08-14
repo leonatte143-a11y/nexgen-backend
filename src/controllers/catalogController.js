@@ -66,14 +66,35 @@ function collectPartnerTerms(partner) {
 }
 
 /**
- * True if any token in tokensA equals, contains, or is contained by any token
- * in tokensB. This is the lenient "substring-both-ways" comparison — e.g.
- * "purohith" (from a sub-icon's searchQuery) overlaps "purohit" (from a
- * partner's registered skills/categories) because "purohith".includes("purohit").
+ * Generic category vocabulary that must NEVER establish a match on its own —
+ * e.g. "AC Service" and "Home Services" share only the word "service(s)",
+ * which caused partners with ANY category to leak into unrelated categories
+ * (the "Divya" bug: a Painter/AC Service/House Cleaning partner showing up
+ * under every bucket whose label happens to also contain "service"/"home").
+ * A token in this list is skipped as a match signal by itself; two phrases
+ * still match if they share any OTHER, more distinctive word (e.g. "cleaning",
+ * "painter", "purohit").
+ */
+const GENERIC_STOPWORDS = new Set([
+  'service', 'services', 'home', 'repair', 'repairs', 'work', 'works',
+  'center', 'centre', 'shop', 'shops', 'and', 'for', 'the', 'of', 'a', 'an',
+  'on', 'in', 'to', 'with',
+]);
+
+/**
+ * True if any DISTINCTIVE token in tokensA equals, contains, or is contained
+ * by any distinctive token in tokensB (generic stopwords excluded from the
+ * comparison — see GENERIC_STOPWORDS). This is the lenient "substring-both-ways"
+ * comparison — e.g. "purohith" (from a sub-icon's searchQuery) overlaps
+ * "purohit" (from a partner's registered skills/categories) because
+ * "purohith".includes("purohit") — while NOT letting two otherwise-unrelated
+ * multi-word categories match purely because they both contain "service".
  */
 function tokensOverlap(tokensA, tokensB) {
   for (const a of tokensA) {
+    if (GENERIC_STOPWORDS.has(a)) continue;
     for (const b of tokensB) {
+      if (GENERIC_STOPWORDS.has(b)) continue;
       if (a === b || a.includes(b) || b.includes(a)) return true;
     }
   }

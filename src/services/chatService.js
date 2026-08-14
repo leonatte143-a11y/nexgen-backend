@@ -24,6 +24,21 @@ export async function getOrCreateConversation({ userId, partnerId, bookingId, ch
       channel,
       status: 'open',
     });
+  } else {
+    // Backfill whichever identity column is still null on the resolved row. A row is
+    // often first created by whichever side (User or Partner) opens the chat first,
+    // and that side's controller may only know its OWN id at creation time (e.g.
+    // partnerSupportController never passes userId). If we don't backfill here, the
+    // other side's later ownership-scoped lookup (sendUserMessage/sendPartnerMessage,
+    // which filter by `{ id, userId }` / `{ id, partnerId }` respectively) 404s even
+    // though both sides correctly resolved to the same conversation/room - so their
+    // messages silently fail to persist/emit while the other role's still work.
+    const patch = {};
+    if (userId && !conv.userId) patch.userId = userId;
+    if (partnerId && !conv.partnerId) patch.partnerId = partnerId;
+    if (Object.keys(patch).length) {
+      await conv.update(patch);
+    }
   }
   return conv;
 }
