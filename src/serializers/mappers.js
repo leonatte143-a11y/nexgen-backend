@@ -163,6 +163,8 @@ export function toPartnerProfile(p) {
     serviceInnerRadiusKm: p.serviceInnerRadiusKm,
     serviceOuterRadiusKm: p.serviceOuterRadiusKm,
     allowOutOfStation: p.allowOutOfStation,
+    latitude: p.latitude != null ? toNum(p.latitude) : null,
+    longitude: p.longitude != null ? toNum(p.longitude) : null,
     referralCode: p.referralCode || '',
     description: p.description || '',
   };

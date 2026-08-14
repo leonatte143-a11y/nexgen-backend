@@ -477,6 +477,8 @@ export async function getServicePartners(req, res, next) {
       isOnline: Boolean(p.isOnline),
       distanceKm: Math.round((baseDistance + index * 0.3) * 10) / 10,
       description: p.description || '',
+      serviceOuterRadiusKm: p.serviceOuterRadiusKm != null ? Number(p.serviceOuterRadiusKm) : null,
+      allowOutOfStation: Boolean(p.allowOutOfStation),
     }));
 
     return sendOk(res, payload);

@@ -25,7 +25,10 @@ if (isDevLoggingEnabled()) {
   app.use(morgan('combined'));
 }
 
-app.use(express.json({ limit: '1mb' }));
+// Photos/banners are sent as base64 data URLs in JSON bodies (no multipart upload pipeline).
+// Client-side compression keeps typical payloads well under 1MB, but raise the ceiling as a
+// safety margin (e.g. multi-photo gallery uploads) instead of relying on compression alone.
+app.use(express.json({ limit: '6mb' }));
 
 app.get('/health', (req, res) => {
   res.json({ success: true, data: { status: 'ok' }, message: 'KAIRO API' });

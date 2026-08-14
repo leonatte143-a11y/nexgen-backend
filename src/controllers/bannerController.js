@@ -171,9 +171,13 @@ export async function adminRejectBanner(req, res, next) {
   }
 }
 
-/** Partner-facing: submit a business ad for admin approval. Mirrors the "Advertise your
- * business" mobile flow (business details + banner image + plan duration -> pending ad row). */
-export async function createPartnerAdRequest(req, res, next) {
+// A base64 data URL is ~33% larger than the underlying image, so cap the raw payload well
+// under a sane image size to fail fast with a clear 400 instead of a confusing DB error.
+const MAX_IMAGE_DATA_URL_LENGTH = 8 * 1024 * 1024; // ~6MB of actual image data
+
+/** Shared create logic for both the Partner- and User-facing "Advertise your business"
+ * submission endpoints — only who owns the row (partnerId vs userId) differs. */
+async function createAdRequest(req, res, next, owner) {
   try {
     const b = req.body || {};
     const title = String(b.businessName || b.title || '').trim();
@@ -182,6 +186,9 @@ export async function createPartnerAdRequest(req, res, next) {
     const imageUrl = b.imageUrl?.trim() || null;
     if (!imageUrl || !isValidMediaUrl(imageUrl)) {
       return sendFail(res, 'imageUrl must be a valid http(s) URL or image/video data URL', 400);
+    }
+    if (imageUrl.length > MAX_IMAGE_DATA_URL_LENGTH) {
+      return sendFail(res, 'Image is too large. Please choose a smaller photo.', 400);
     }
 
     const startDate = b.startDate ? new Date(b.startDate) : new Date();
@@ -209,8 +216,9 @@ export async function createPartnerAdRequest(req, res, next) {
       displayOrder,
       startDate,
       endDate,
-      createdBy: req.partnerId || null,
-      partnerId: req.partnerId || null,
+      createdBy: owner.partnerId || owner.userId || null,
+      partnerId: owner.partnerId || null,
+      userId: owner.userId || null,
       status: 'pending',
     });
     return sendOk(res, toBannerDto(row), 'Ad submitted for approval', 201);
@@ -219,12 +227,37 @@ export async function createPartnerAdRequest(req, res, next) {
   }
 }
 
+/** Partner-facing: submit a business ad for admin approval. Mirrors the "Advertise your
+ * business" mobile flow (business details + banner image + plan duration -> pending ad row). */
+export async function createPartnerAdRequest(req, res, next) {
+  return createAdRequest(req, res, next, { partnerId: req.partnerId });
+}
+
+/** User-facing equivalent of createPartnerAdRequest — the "Advertise your business" entry
+ * point lives in the User App's Profile menu, so Users need their own path to submit one. */
+export async function createUserAdRequest(req, res, next) {
+  return createAdRequest(req, res, next, { userId: req.userId });
+}
+
 /** Partner-facing: list ads this partner has submitted, newest first, so they can track
  * approval status from the mobile "My Ads" screen. */
 export async function listMyAdRequests(req, res, next) {
   try {
     const rows = await AdvertisementBanner.findAll({
       where: { partnerId: req.partnerId },
+      order: [['createdAt', 'DESC']],
+    });
+    return sendOk(res, rows.map(toBannerDto));
+  } catch (e) {
+    next(e);
+  }
+}
+
+/** User-facing equivalent of listMyAdRequests. */
+export async function listMyUserAdRequests(req, res, next) {
+  try {
+    const rows = await AdvertisementBanner.findAll({
+      where: { userId: req.userId },
       order: [['createdAt', 'DESC']],
     });
     return sendOk(res, rows.map(toBannerDto));

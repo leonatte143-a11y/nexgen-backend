@@ -8,7 +8,7 @@ export function defineAdvertisementBanner(sequelize) {
       id: { type: DataTypes.STRING(64), primaryKey: true },
       title: { type: DataTypes.STRING(200), allowNull: false },
       subtitle: { type: DataTypes.STRING(300), allowNull: true },
-      imageUrl: { type: DataTypes.TEXT, allowNull: true },
+      imageUrl: { type: DataTypes.TEXT('long'), allowNull: true },
       mediaType: { type: DataTypes.STRING(16), allowNull: false, defaultValue: 'image' },
       placement: { type: DataTypes.STRING(32), allowNull: false, defaultValue: 'home_dashboard' },
       ctaText: { type: DataTypes.STRING(80), allowNull: false, defaultValue: 'Book Now' },
@@ -28,6 +28,9 @@ export function defineAdvertisementBanner(sequelize) {
       status: { type: DataTypes.STRING(16), allowNull: false, defaultValue: 'approved' },
       /** Nullable FK to partners.id — set when a banner was submitted by a partner (vs. admin-created). */
       partnerId: { type: DataTypes.STRING(64), allowNull: true },
+      /** Nullable FK to users.id — set when a banner was submitted by a User via the
+       * "Advertise your business" flow (vs. a Partner or admin-created banner). */
+      userId: { type: DataTypes.STRING(64), allowNull: true },
     },
     {
       sequelize,

@@ -541,6 +541,8 @@ export async function updateProfile(req, res, next) {
       'serviceInnerRadiusKm',
       'serviceOuterRadiusKm',
       'allowOutOfStation',
+      'latitude',
+      'longitude',
       'description',
     ];
     const upd = {};

@@ -97,12 +97,17 @@ const COLUMN_ALTERS = [
   "ALTER TABLE partners ADD COLUMN reviews_count INT NOT NULL DEFAULT 0",
   // Partner-provided reason when cancelling an accepted/in-progress job
   "ALTER TABLE bookings ADD COLUMN cancellation_reason VARCHAR(256) NULL",
+  // User-submitted "Advertise your business" requests (vs. partner- or admin-created)
+  "ALTER TABLE advertisement_banners ADD COLUMN user_id VARCHAR(64) NULL",
 ];
 
 /** Column type widenings — idempotent (MODIFY COLUMN never errors on rerun). */
 const COLUMN_MODIFICATIONS = [
   "ALTER TABLE shops MODIFY COLUMN photo_url TEXT NULL",
   "ALTER TABLE partners MODIFY COLUMN photo_url TEXT NULL",
+  // Base64-encoded banner images routinely exceed TEXT's 64KB limit, causing a DB error
+  // that surfaced to users as a generic "Submission failed internal error".
+  "ALTER TABLE advertisement_banners MODIFY COLUMN image_url LONGTEXT NULL",
 ];
 
 const CREATE_TABLES = [

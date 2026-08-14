@@ -152,6 +152,14 @@ export async function createBooking(req, res, next) {
             partnerId: partner.id,
           });
 
+    if (
+      !partner.allowOutOfStation &&
+      partner.serviceOuterRadiusKm != null &&
+      Number(quote.distanceKm) > Number(partner.serviceOuterRadiusKm)
+    ) {
+      return sendFail(res, "You're outside this partner's service area", 400);
+    }
+
     const lineItems = normalizeSelectedItems(selectedItems);
     let itemsSubtotal = lineItems.length ? sumLineItems(lineItems) : 0;
     if (!lineItems.length) {
