@@ -559,6 +559,33 @@ export async function getPartnerServiceMenu(req, res, next) {
   }
 }
 
+/** GET /catalog/partners/:partnerId/reviews */
+export async function getPartnerReviews(req, res, next) {
+  try {
+    const { partnerId } = req.params;
+    const rows = await Review.findAll({
+      where: { partnerId },
+      order: [['createdAt', 'DESC']],
+      limit: 20,
+    });
+    const userIds = [...new Set(rows.map((row) => row.userId).filter(Boolean))];
+    const users = userIds.length ? await User.findAll({ where: { id: userIds }, attributes: ['id', 'name'] }) : [];
+    const namesById = users.reduce((acc, u) => {
+      acc[u.id] = u.name;
+      return acc;
+    }, {});
+    const reviews = rows.map((row) => ({
+      id: row.id,
+      author: namesById[row.userId] || 'Customer',
+      rating: Number(row.stars) || 0,
+      comment: row.note || '',
+    }));
+    return sendOk(res, reviews);
+  } catch (e) {
+    next(e);
+  }
+}
+
 /** POST /catalog/partners/:partnerId/view — logs a User opening a Partner's profile as an "enquiry" notification for that partner. */
 export async function logProfileView(req, res, next) {
   try {
