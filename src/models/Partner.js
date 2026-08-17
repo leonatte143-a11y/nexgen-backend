@@ -7,7 +7,7 @@ export function definePartner(sequelize) {
       id: { type: DataTypes.STRING(64), primaryKey: true },
       phone: { type: DataTypes.STRING(16), allowNull: false },
       name: DataTypes.STRING(256),
-      photoUrl: DataTypes.TEXT,
+      photoUrl: DataTypes.TEXT('long'),
       photos: { type: DataTypes.JSON, defaultValue: [] },
       rating: { type: DataTypes.DECIMAL(3, 2), defaultValue: 4.8 },
       reviewsCount: { type: DataTypes.INTEGER, defaultValue: 0 },

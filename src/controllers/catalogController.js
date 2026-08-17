@@ -12,6 +12,7 @@ import { logSearch } from '../services/searchLogService.js';
 import { getSettings } from '../services/appSettingsService.js';
 import { visitingChargeForDistance } from '../services/money.js';
 import { toNum } from '../serializers/formatters.js';
+import { haversineKm } from '../utils/haversine.js';
 
 const TERM_ALIASES = new Map([
   ['electrical', 'electrician'],
@@ -464,22 +465,34 @@ export async function getServicePartners(req, res, next) {
       }
     }
     const baseDistance = baseDistanceSeed;
-    const payload = matching.map((p, index) => ({
-      id: p.id,
-      name: p.name,
-      phone: p.phone,
-      rating: Number(p.rating),
-      jobsCompleted: p.jobsCompleted,
-      photoUrl: p.photoUrl || undefined,
-      photos: parseJsonArray(p.photos),
-      reviewsCount: reviewCounts[p.id] ?? 0,
-      categories: parseJsonArray(p.categories),
-      isOnline: Boolean(p.isOnline),
-      distanceKm: Math.round((baseDistance + index * 0.3) * 10) / 10,
-      description: p.description || '',
-      serviceOuterRadiusKm: p.serviceOuterRadiusKm != null ? Number(p.serviceOuterRadiusKm) : null,
-      allowOutOfStation: Boolean(p.allowOutOfStation),
-    }));
+    const userLat = req.query.lat != null ? Number(req.query.lat) : null;
+    const userLng = req.query.lng != null ? Number(req.query.lng) : null;
+    const hasUserCoords = Number.isFinite(userLat) && Number.isFinite(userLng);
+    const payload = matching.map((p, index) => {
+      const partnerLat = p.latitude != null ? Number(p.latitude) : null;
+      const partnerLng = p.longitude != null ? Number(p.longitude) : null;
+      const hasPartnerCoords = Number.isFinite(partnerLat) && Number.isFinite(partnerLng);
+      const distanceKm =
+        hasUserCoords && hasPartnerCoords
+          ? haversineKm(userLat, userLng, partnerLat, partnerLng)
+          : Math.round((baseDistance + index * 0.3) * 10) / 10;
+      return {
+        id: p.id,
+        name: p.name,
+        phone: p.phone,
+        rating: Number(p.rating),
+        jobsCompleted: p.jobsCompleted,
+        photoUrl: p.photoUrl || undefined,
+        photos: parseJsonArray(p.photos),
+        reviewsCount: reviewCounts[p.id] ?? 0,
+        categories: parseJsonArray(p.categories),
+        isOnline: Boolean(p.isOnline),
+        distanceKm,
+        description: p.description || '',
+        serviceOuterRadiusKm: p.serviceOuterRadiusKm != null ? Number(p.serviceOuterRadiusKm) : null,
+        allowOutOfStation: Boolean(p.allowOutOfStation),
+      };
+    });
 
     return sendOk(res, payload);
   } catch (e) {

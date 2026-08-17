@@ -104,7 +104,9 @@ const COLUMN_ALTERS = [
 /** Column type widenings — idempotent (MODIFY COLUMN never errors on rerun). */
 const COLUMN_MODIFICATIONS = [
   "ALTER TABLE shops MODIFY COLUMN photo_url TEXT NULL",
-  "ALTER TABLE partners MODIFY COLUMN photo_url TEXT NULL",
+  // Base64-encoded partner profile photos routinely exceed TEXT's 64KB limit, causing a DB
+  // error ("Data too long for column") that surfaced to partners as a generic upload failure.
+  "ALTER TABLE partners MODIFY COLUMN photo_url LONGTEXT NULL",
   // Base64-encoded banner images routinely exceed TEXT's 64KB limit, causing a DB error
   // that surfaced to users as a generic "Submission failed internal error".
   "ALTER TABLE advertisement_banners MODIFY COLUMN image_url LONGTEXT NULL",
