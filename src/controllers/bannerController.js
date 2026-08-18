@@ -153,7 +153,7 @@ export async function adminApproveBanner(req, res, next) {
   try {
     const row = await AdvertisementBanner.findByPk(req.params.id);
     if (!row) return sendFail(res, 'Banner not found', 404);
-    await row.update({ status: 'approved', isActive: true });
+    await row.update({ status: 'approved', isActive: true, reviewNote: null });
     return sendOk(res, toBannerDto(row), 'Ad approved');
   } catch (e) {
     next(e);
@@ -164,7 +164,8 @@ export async function adminRejectBanner(req, res, next) {
   try {
     const row = await AdvertisementBanner.findByPk(req.params.id);
     if (!row) return sendFail(res, 'Banner not found', 404);
-    await row.update({ status: 'rejected', isActive: false });
+    const reviewNote = req.body?.reason ? String(req.body.reason).trim().slice(0, 500) : null;
+    await row.update({ status: 'rejected', isActive: false, reviewNote });
     return sendOk(res, toBannerDto(row), 'Ad rejected');
   } catch (e) {
     next(e);
@@ -211,7 +212,7 @@ async function createAdRequest(req, res, next, owner) {
       redirectType: b.redirectValue ? 'external' : 'none',
       redirectValue: b.redirectValue?.trim() || null,
       city: b.city?.trim() || null,
-      isActive: false,
+      isActive: true,
       priority: 0,
       displayOrder,
       startDate,
@@ -219,9 +220,9 @@ async function createAdRequest(req, res, next, owner) {
       createdBy: owner.partnerId || owner.userId || null,
       partnerId: owner.partnerId || null,
       userId: owner.userId || null,
-      status: 'pending',
+      status: 'approved',
     });
-    return sendOk(res, toBannerDto(row), 'Ad submitted for approval', 201);
+    return sendOk(res, toBannerDto(row), 'Your ad is live', 201);
   } catch (e) {
     next(e);
   }

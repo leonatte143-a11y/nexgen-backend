@@ -99,6 +99,8 @@ const COLUMN_ALTERS = [
   "ALTER TABLE bookings ADD COLUMN cancellation_reason VARCHAR(256) NULL",
   // User-submitted "Advertise your business" requests (vs. partner- or admin-created)
   "ALTER TABLE advertisement_banners ADD COLUMN user_id VARCHAR(64) NULL",
+  // Admin's reason when flagging/rejecting a submitted ad — shown to the submitter
+  "ALTER TABLE advertisement_banners ADD COLUMN review_note VARCHAR(500) NULL",
 ];
 
 /** Column type widenings — idempotent (MODIFY COLUMN never errors on rerun). */

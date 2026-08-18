@@ -19,6 +19,7 @@ export function toBannerDto(row) {
     createdBy: row.createdBy ?? null,
     geoFence: row.geoFence ?? null,
     status: row.status || 'approved',
+    reviewNote: row.reviewNote ?? null,
     partnerId: row.partnerId ?? null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,

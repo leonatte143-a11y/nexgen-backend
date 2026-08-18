@@ -23,9 +23,13 @@ export function defineAdvertisementBanner(sequelize) {
       createdBy: { type: DataTypes.STRING(64), allowNull: true },
       /** Optional geo-fence polygon: array of { lat, lng } points. Null/empty = no location restriction. */
       geoFence: { type: DataTypes.JSON, allowNull: true },
-      /** 'pending' | 'approved' | 'rejected'. Defaults to 'approved' so existing/admin-created banners
-       * keep behaving exactly as before. Partner-submitted ads explicitly set 'pending' at creation. */
+      /** 'pending' | 'approved' | 'rejected'. Partner/User-submitted ads are auto-approved at
+       * creation so they go live instantly — 'pending'/'rejected' are now only reached if an
+       * admin later manually flags/rejects a live ad for review. */
       status: { type: DataTypes.STRING(16), allowNull: false, defaultValue: 'approved' },
+      /** Optional note an admin attaches when flagging/rejecting a submitted ad — shown to the
+       * submitter as the "reason" in their My Ads > Pending tab. */
+      reviewNote: { type: DataTypes.STRING(500), allowNull: true },
       /** Nullable FK to partners.id — set when a banner was submitted by a partner (vs. admin-created). */
       partnerId: { type: DataTypes.STRING(64), allowNull: true },
       /** Nullable FK to users.id — set when a banner was submitted by a User via the
