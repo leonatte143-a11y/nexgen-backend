@@ -71,7 +71,11 @@ export async function listListings(req, res, next) {
     if (categoryId) where.categoryId = categoryId;
     if (city) where.city = city;
 
-    const rows = await MarketplaceListing.findAll({ where, order: [['createdAt', 'DESC']] });
+    // No ORDER BY here on purpose: photos is a JSON column holding base64 images, and letting
+    // MySQL filesort rows that wide can exceed sort_buffer_size ("Out of sort memory"). Sort
+    // in JS instead, after fetching, which is cheap at this table's size.
+    const rows = await MarketplaceListing.findAll({ where });
+    rows.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
     let filtered = rows;
     if (q) {
@@ -166,10 +170,8 @@ export async function createListing(req, res, next) {
 
 export async function listMyListings(req, res, next) {
   try {
-    const rows = await MarketplaceListing.findAll({
-      where: { sellerRole: req.sellerRole, sellerId: req.sellerId },
-      order: [['createdAt', 'DESC']],
-    });
+    const rows = await MarketplaceListing.findAll({ where: { sellerRole: req.sellerRole, sellerId: req.sellerId } });
+    rows.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     return sendOk(res, rows.map((r) => toListingDto(r)));
   } catch (e) {
     next(e);

@@ -33,8 +33,11 @@ export async function adminListListings(req, res, next) {
     const where = {};
     if (status) where.status = status;
     if (moderationStatus) where.moderationStatus = moderationStatus;
-    const rows = await MarketplaceListing.findAll({ where, order: [['createdAt', 'DESC']], limit: 200 });
-    return sendOk(res, await attachSellerInfo(rows));
+    // Sort in JS, not via SQL ORDER BY — photos is a JSON column of base64 images, and MySQL
+    // filesort on rows that wide can exceed sort_buffer_size ("Out of sort memory").
+    const rows = await MarketplaceListing.findAll({ where });
+    rows.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    return sendOk(res, await attachSellerInfo(rows.slice(0, 200)));
   } catch (e) {
     next(e);
   }
