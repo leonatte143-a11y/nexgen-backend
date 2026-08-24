@@ -22,6 +22,10 @@ export function defineMarketplaceListing(sequelize) {
       longitude: { type: DataTypes.DECIMAL(10, 7), allowNull: true },
       contactPhone: { type: DataTypes.STRING(16), allowNull: true },
       status: { type: DataTypes.STRING(16), allowNull: false, defaultValue: 'active' }, // active|rented|sold|removed|banned
+      // pending|approved|rejected — no DB-level default so alter-sync doesn't retroactively
+      // mark pre-existing live listings as pending; null is treated as legacy-approved.
+      moderationStatus: { type: DataTypes.STRING(16), allowNull: true },
+      rejectionReason: { type: DataTypes.TEXT, allowNull: true },
     },
     { sequelize, modelName: 'MarketplaceListing', tableName: 'marketplace_listings', timestamps: true },
   );

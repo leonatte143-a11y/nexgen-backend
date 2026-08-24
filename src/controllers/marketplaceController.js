@@ -1,4 +1,5 @@
 import { randomUUID } from 'crypto';
+import { Op } from 'sequelize';
 import { MarketplaceCategory, MarketplaceListing, MarketplaceReport, User, Partner } from '../models/index.js';
 import { sendOk, sendFail } from '../utils/apiResponse.js';
 import { haversineKm } from '../utils/haversine.js';
@@ -40,6 +41,8 @@ function toListingDto(row, distanceKm) {
     latitude: row.latitude != null ? toNum(row.latitude) : null,
     longitude: row.longitude != null ? toNum(row.longitude) : null,
     status: row.status,
+    moderationStatus: row.moderationStatus,
+    rejectionReason: row.rejectionReason || null,
     distanceKm: distanceKm != null ? distanceKm : null,
     createdAt: row.createdAt,
   };
@@ -62,7 +65,8 @@ export async function listListings(req, res, next) {
 
     if (q) await bumpCategorySearch(String(q)).catch(() => {});
 
-    const where = { status: 'active' };
+    // Treat null moderationStatus as legacy-approved (listings created before the approval workflow existed).
+    const where = { status: 'active', [Op.or]: [{ moderationStatus: 'approved' }, { moderationStatus: null }] };
     if (listingType && LISTING_TYPES.includes(String(listingType))) where.listingType = listingType;
     if (categoryId) where.categoryId = categoryId;
     if (city) where.city = city;
@@ -151,9 +155,10 @@ export async function createListing(req, res, next) {
       longitude: b.longitude != null ? Number(b.longitude) : null,
       contactPhone: contactPhone || null,
       status: 'active',
+      moderationStatus: 'pending',
     });
 
-    return sendOk(res, toListingDto(row), 'Listing posted', 201);
+    return sendOk(res, toListingDto(row), 'Listing submitted for review', 201);
   } catch (e) {
     next(e);
   }

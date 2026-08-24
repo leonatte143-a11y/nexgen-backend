@@ -191,6 +191,8 @@ r.put('/shop-categories/:id', requirePermission(P.SHOPS_MANAGE), shops.updateCat
 r.get('/marketplace/listings', requirePermission(P.MARKETPLACE_MODERATE), marketplace.adminListListings);
 r.get('/marketplace/reports', requirePermission(P.MARKETPLACE_MODERATE), marketplace.adminListReports);
 r.post('/marketplace/listings/:id/ban', requirePermission(P.MARKETPLACE_MODERATE), marketplace.adminBanListing);
+r.put('/marketplace/listings/:id/approve', requirePermission(P.MARKETPLACE_MODERATE), marketplace.adminApproveListing);
+r.put('/marketplace/listings/:id/reject', requirePermission(P.MARKETPLACE_MODERATE), marketplace.adminRejectListing);
 r.delete('/marketplace/listings/:id', requirePermission(P.MARKETPLACE_MODERATE), marketplace.adminDeleteListing);
 
 export default r;

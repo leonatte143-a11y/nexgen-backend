@@ -101,6 +101,10 @@ const COLUMN_ALTERS = [
   "ALTER TABLE advertisement_banners ADD COLUMN user_id VARCHAR(64) NULL",
   // Admin's reason when flagging/rejecting a submitted ad — shown to the submitter
   "ALTER TABLE advertisement_banners ADD COLUMN review_note VARCHAR(500) NULL",
+  // EXO Store / P2P Marketplace ad approval workflow — pending|approved|rejected.
+  // No DB-level default: existing rows stay NULL and are treated as legacy-approved in queries.
+  "ALTER TABLE marketplace_listings ADD COLUMN moderation_status VARCHAR(16) NULL",
+  "ALTER TABLE marketplace_listings ADD COLUMN rejection_reason TEXT NULL",
 ];
 
 /** Column type widenings — idempotent (MODIFY COLUMN never errors on rerun). */
@@ -220,6 +224,8 @@ const CREATE_TABLES = [
     longitude DECIMAL(10,7) NULL,
     contact_phone VARCHAR(16) NULL,
     status VARCHAR(16) NOT NULL DEFAULT 'active',
+    moderation_status VARCHAR(16) NULL,
+    rejection_reason TEXT NULL,
     created_at DATETIME NULL,
     updated_at DATETIME NULL
   )`,
