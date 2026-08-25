@@ -2,6 +2,7 @@ import { DataTypes, Model } from 'sequelize';
 
 export const REVENUE_CATEGORIES = [
   'user_subscription',
+  'partner_subscription',
   'partner_registration',
   'booking_commission',
   'advertising',

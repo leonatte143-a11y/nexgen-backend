@@ -12,6 +12,14 @@ const DEFAULTS = {
   partner_price_max: 1000,
   payout_threshold: 500,
   cities: ['Rajahmundry', 'Guntur'],
+  partner_subscription_price: 499,
+  partner_subscription_offer_percent: 0,
+  partner_subscription_offer_code: '',
+  partner_subscription_payment_link: '',
+  ad_campaign_price: 999,
+  ad_campaign_offer_percent: 0,
+  ad_campaign_offer_code: '',
+  ad_campaign_payment_link: '',
 };
 
 export async function getSettings() {

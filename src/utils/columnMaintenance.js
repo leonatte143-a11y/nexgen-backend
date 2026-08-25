@@ -105,6 +105,9 @@ const COLUMN_ALTERS = [
   // No DB-level default: existing rows stay NULL and are treated as legacy-approved in queries.
   "ALTER TABLE marketplace_listings ADD COLUMN moderation_status VARCHAR(16) NULL",
   "ALTER TABLE marketplace_listings ADD COLUMN rejection_reason TEXT NULL",
+  // Generic admin-defined label/value pairs on a service, replacing the removed
+  // Global Base Price / Platform Commission Fee inputs on the "Add New Service" form.
+  "ALTER TABLE services ADD COLUMN custom_fields JSON NULL",
 ];
 
 /** Column type widenings — idempotent (MODIFY COLUMN never errors on rerun). */

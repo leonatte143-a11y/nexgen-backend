@@ -17,6 +17,7 @@ export function defineService(sequelize) {
       distanceKm: { type: DataTypes.DECIMAL(6, 2), defaultValue: 0 },
       commissionPercent: { type: DataTypes.DECIMAL(5, 2), defaultValue: 10 },
       premiumPrice: { type: DataTypes.DECIMAL(10, 2), allowNull: true },
+      customFields: { type: DataTypes.JSON, allowNull: true },
       isActive: { type: DataTypes.BOOLEAN, defaultValue: true },
     },
     { sequelize, modelName: 'Service', tableName: 'services', timestamps: true },

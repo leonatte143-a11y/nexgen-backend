@@ -31,7 +31,10 @@ async function ensureCatalogPartner() {
 
 export async function listCategories(_req, res, next) {
   try {
-    const rows = await Category.findAll({ order: [['id', 'ASC']] });
+    const rows = await Category.findAll({
+      where: { isActive: { [Op.ne]: false } },
+      order: [['id', 'ASC']],
+    });
     return sendOk(res, rows.map(toServiceBucket));
   } catch (e) {
     next(e);
@@ -109,6 +112,7 @@ export async function deleteCategory(req, res, next) {
 export async function listServicesAdmin(_req, res, next) {
   try {
     const rows = await Service.findAll({
+      where: { isActive: { [Op.ne]: false } },
       include: [{ model: Partner, as: 'partner' }, { model: Category, as: 'category' }],
       order: [['name', 'ASC']],
     });
@@ -120,6 +124,7 @@ export async function listServicesAdmin(_req, res, next) {
         premiumPrice: s.premiumPrice != null ? toNum(s.premiumPrice) : toNum(s.basePrice),
         categoryId: s.categoryId,
         isActive: s.isActive !== false,
+        customFields: s.customFields || [],
       })),
     );
   } catch (e) {
@@ -129,7 +134,7 @@ export async function listServicesAdmin(_req, res, next) {
 
 export async function createCatalogService(req, res, next) {
   try {
-    const { categoryId, name, basePrice, commissionPercent, subtext, description } = req.body;
+    const { categoryId, name, basePrice, commissionPercent, subtext, description, customFields } = req.body;
     if (!categoryId || !name?.trim()) {
       return sendFail(res, 'categoryId and service name are required', 400);
     }
@@ -151,6 +156,7 @@ export async function createCatalogService(req, res, next) {
       basePrice: basePrice != null ? basePrice : 0,
       commissionPercent: commissionPercent != null ? commissionPercent : 10,
       description: description || '',
+      customFields: Array.isArray(customFields) && customFields.length ? customFields : null,
       isActive: true,
     });
     const full = await Service.findByPk(s.id, {
@@ -164,7 +170,11 @@ export async function createCatalogService(req, res, next) {
     });
     return sendOk(
       res,
-      { ...toCatalogService(full), commissionPercent: toNum(full.commissionPercent) || 10 },
+      {
+        ...toCatalogService(full),
+        commissionPercent: toNum(full.commissionPercent) || 10,
+        customFields: full.customFields || [],
+      },
       'Service created',
     );
   } catch (e) {
@@ -176,7 +186,7 @@ export async function updateService(req, res, next) {
   try {
     const s = await Service.findByPk(req.params.id, { include: [{ model: Partner, as: 'partner' }] });
     if (!s) return sendFail(res, 'Service not found', 404);
-    const { basePrice, premiumPrice, name, subtext, categoryLabel, commissionPercent, description, isActive } = req.body;
+    const { basePrice, premiumPrice, name, subtext, categoryLabel, commissionPercent, description, isActive, customFields } = req.body;
     await s.update({
       basePrice: basePrice != null ? basePrice : s.basePrice,
       premiumPrice: premiumPrice !== undefined ? premiumPrice : s.premiumPrice,
@@ -185,6 +195,7 @@ export async function updateService(req, res, next) {
       categoryLabel: categoryLabel ?? s.categoryLabel,
       commissionPercent: commissionPercent ?? s.commissionPercent,
       description: description ?? s.description,
+      customFields: customFields !== undefined ? customFields : s.customFields,
       isActive: isActive !== undefined ? Boolean(isActive) : s.isActive,
     });
     await recordAdminAction(req.adminId, 'service_price_update', {

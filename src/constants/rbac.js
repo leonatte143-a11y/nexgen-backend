@@ -12,6 +12,7 @@ export const ADMIN_ROLES = [
 export const PERMISSIONS = {
   DASHBOARD_VIEW: 'dashboard:view',
   REVENUE_VIEW: 'revenue:view',
+  PAYMENTS_MANAGE: 'payments:manage',
   PAYOUTS_MANAGE: 'payouts:manage',
   PRICING_MANAGE: 'pricing:manage',
   SERVICES_MANAGE: 'services:manage',
@@ -65,6 +66,8 @@ export const ROLE_PERMISSIONS = {
     PERMISSIONS.SERVICES_MANAGE,
     PERMISSIONS.SHOPS_VERIFY,
     PERMISSIONS.PARTNERS_COMPLIANCE,
+    PERMISSIONS.REVENUE_VIEW,
+    PERMISSIONS.PAYMENTS_MANAGE,
   ],
   hr: [
     PERMISSIONS.STAFF_MANAGE,

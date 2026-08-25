@@ -16,6 +16,7 @@ import {
 import { COMMISSION_RATE } from './money.js';
 import { toNum } from '../serializers/formatters.js';
 import { getDashboardStats } from './adminDashboardService.js';
+import { getSettings } from './appSettingsService.js';
 
 const PARTNER_REG_FEE = Number(process.env.PARTNER_REGISTRATION_FEE) || 299;
 const AD_REVENUE_PER_BANNER = Number(process.env.AD_REVENUE_PER_BANNER_MONTHLY) || 2500;
@@ -150,6 +151,7 @@ export async function getFinancialBreakdown() {
   let partnerRegistration = await sumRevenueByCategory('partner_registration');
   let advertising = await sumRevenueByCategory('advertising');
   let userSubscription = await sumRevenueByCategory('user_subscription');
+  let partnerSubscription = await sumRevenueByCategory('partner_subscription');
 
   if (bookingCommission === 0) {
     const completed = await Booking.findAll({
@@ -172,12 +174,18 @@ export async function getFinancialBreakdown() {
     const uc = await User.count();
     userSubscription = Math.round(uc * USER_SUBSCRIPTION_MONTHLY * 0.15);
   }
+  if (partnerSubscription === 0) {
+    const settings = await getSettings();
+    const pc = await Partner.count();
+    partnerSubscription = Math.round(pc * toNum(settings.partner_subscription_price));
+  }
 
   const categories = [
     { id: 'user_subscription', label: 'User Subscriptions', amount: userSubscription },
+    { id: 'partner_subscription', label: 'Partner Subscription Revenue', amount: partnerSubscription },
     { id: 'partner_registration', label: 'Service Partner Registrations', amount: partnerRegistration },
     { id: 'booking_commission', label: 'Booking Commission', amount: bookingCommission },
-    { id: 'advertising', label: 'Advertisement Revenue', amount: advertising },
+    { id: 'advertising', label: 'Advertise Your Business (Ad Campaigns)', amount: advertising },
   ];
   const totalRevenue = categories.reduce((s, c) => s + c.amount, 0);
 
