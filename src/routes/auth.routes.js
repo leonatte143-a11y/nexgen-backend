@@ -6,6 +6,8 @@ const r = Router();
 
 r.post('/otp/request', auth.requestOtp);
 r.post('/otp/verify', auth.verifyOtpUser);
+r.post('/firebase/verify', auth.verifyFirebaseUser);
+r.post('/firebase/partner-login', auth.firebasePartnerLogin);
 r.post('/partner/login', auth.partnerLogin);
 r.post('/partner/register', auth.registerPartner);
 r.post('/register', auth.registerUserProfile);

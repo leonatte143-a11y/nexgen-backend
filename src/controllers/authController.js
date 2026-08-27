@@ -1,6 +1,8 @@
 ﻿import bcrypt from 'bcryptjs';
 import { User, AdminUser, Partner } from '../models/index.js';
 import { issueOtp, verifyOtpRecord, getOtpDigitLength } from '../services/otpService.js';
+import { sendOtpSms } from '../services/smsService.js';
+import { verifyFirebasePhoneToken } from '../services/firebaseAdmin.js';
 import { signToken } from '../utils/jwt.js';
 import { resolveAdminPermissions } from '../constants/rbac.js';
 import { sendOk, sendFail } from '../utils/apiResponse.js';
@@ -29,10 +31,10 @@ export async function requestOtp(req, res, next) {
     ctrlLog('AUTH', 'OTP requested', req, { phoneLast4: phone.slice(-4), ttlSec });
     const otpLength = getOtpDigitLength();
     const data = { ok: true, expiresInSec: ttlSec, otpLength };
-    // if (process.env.NODE_ENV !== 'production' && process.env.OTP_DEBUG_RESPONSE === 'true') {
-      data.debugOtp = plain;
-    // }
+    const sms = await sendOtpSms(phone, plain);
+    data.smsSent = sms.sent;
     if (process.env.NODE_ENV !== 'production' && process.env.OTP_DEBUG_RESPONSE === 'true') {
+      data.debugOtp = plain;
       // eslint-disable-next-line no-console
       console.info(`[otp-debug] ${phone} OTP=${plain} (disable OTP_DEBUG_RESPONSE in production)`);
     }
@@ -169,6 +171,91 @@ export async function partnerLogin(req, res, next) {
       message: '',
     });
   } catch (e) {
+    next(e);
+  }
+}
+
+/**
+ * Mobile (Firebase phone-auth flow): authService.verifyFirebaseUser
+ * Body: { idToken } — a Firebase Phone-Auth ID token from the client SDK.
+ * Mirrors verifyOtpUser's find-or-create + block-check + JWT logic, but the
+ * phone number comes from a verified Firebase token instead of our own
+ * DB-backed OTP (used once the mobile app switches to native Firebase auth).
+ */
+export async function verifyFirebaseUser(req, res, next) {
+  try {
+    const idToken = String(req.body.idToken || '');
+    if (!idToken) return sendFail(res, 'idToken is required.', 400);
+    const { phone } = await verifyFirebasePhoneToken(idToken);
+
+    const id = `user_${phone}`;
+    const [user] = await User.findOrCreate({
+      where: { phone },
+      defaults: {
+        id,
+        phone,
+        firstName: '',
+        lastName: '',
+        email: '',
+        address: '',
+        rewardPoints: 0,
+        referralCode: buildReferralCode({ phone, id }),
+      },
+    });
+    await ensureUserReferralCode(user);
+    if (user.isBlocked) {
+      ctrlLog('AUTH', 'Firebase verify blocked user', req, { userId: user.id, phoneLast4: phone.slice(-4) });
+      return res.status(200).json({
+        success: true,
+        data: { ok: false, message: 'This account is blocked. Contact KAIRO support.' },
+        message: '',
+      });
+    }
+    const token = signToken({ sub: user.id, phone }, 'user');
+    ctrlLog('AUTH', 'Firebase verified — user logged in', req, { userId: user.id, phoneLast4: phone.slice(-4) });
+    return res.json({
+      success: true,
+      data: { ok: true, token, message: 'Logged in.', user: toMockUser(user) },
+      message: '',
+    });
+  } catch (e) {
+    if (e.status && e.message) return sendFail(res, e.message, e.status);
+    next(e);
+  }
+}
+
+/**
+ * Mobile (Firebase phone-auth flow): authService.firebasePartnerLogin
+ * Body: { idToken } — mirrors partnerLogin but sources the phone from a
+ * verified Firebase token instead of our DB-backed OTP.
+ */
+export async function firebasePartnerLogin(req, res, next) {
+  try {
+    const idToken = String(req.body.idToken || '');
+    if (!idToken) return sendFail(res, 'idToken is required.', 400);
+    const { phone } = await verifyFirebasePhoneToken(idToken);
+
+    const partner = await Partner.findOne({ where: { phone } });
+    if (!partner) {
+      ctrlLog('AUTH', 'Firebase partner login — no account', req, { phoneLast4: phone.slice(-4) });
+      return res.json({
+        success: true,
+        data: {
+          ok: false,
+          message: 'No partner account for this number. Complete partner registration first.',
+        },
+        message: '',
+      });
+    }
+    const token = signToken({ sub: partner.id, phone }, 'partner');
+    ctrlLog('AUTH', 'Firebase partner logged in', req, { partnerId: partner.id, phoneLast4: phone.slice(-4) });
+    return res.json({
+      success: true,
+      data: { ok: true, token, message: 'Logged in.', partner: toPartnerProfile(partner) },
+      message: '',
+    });
+  } catch (e) {
+    if (e.status && e.message) return sendFail(res, e.message, e.status);
     next(e);
   }
 }
